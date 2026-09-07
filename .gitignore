@@ -1,0 +1,40 @@
+# Environment & Secrets
+.env
+*.env.local
+
+# Go
+backend-core/bin/
+backend-core/vendor/
+*.exe
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+intelligence-service/.venv/
+intelligence-service/venv/
+*.egg-info/
+
+# Node / Next.js
+frontend-dashboard/node_modules/
+frontend-dashboard/.next/
+frontend-dashboard/out/
+
+# Docker volumes
+neo4j_data/
+postgres_data/
+redis_data/
+
+# IDE
+.vscode/
+.idea/
+*.DS_Store
+
+# Ignored Folders
+temp_researc/
+junks/
+
+# Ignore generated reports but keep the folder
+reports/*
+!reports/.gitkeep
+docs/
