@@ -52,6 +52,8 @@ func RegisterRoutes(
 	h := &Handler{pg: pg, neo4j: neo4jDriver, redis: redisClient, repo: repo, graphRepo: graphRepo, engine: engine}
 
 	router.GET("/health", h.HealthCheck)
+	router.GET("/healthz", h.HealthCheck)
+	router.GET("/", h.HealthCheck)
 
 	v1 := router.Group("/api/v1")
 
