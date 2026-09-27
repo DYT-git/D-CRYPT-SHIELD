@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from "@/components/Icons";
 import DemoBadge from "@/components/DemoBadge";
+import EngineStatusBanner from "@/components/EngineStatusBanner";
 
 const CHAINS = [
   { id: "ethereum", label: "Ethereum",  logo: "https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=032" },
@@ -36,6 +37,7 @@ function Label({ children, required }: { children: React.ReactNode; required?: b
 
 export default function TracePage() {
   const router = useRouter();
+  const isCustomTrackingEnabled = process.env.NEXT_PUBLIC_ENABLE_CUSTOM_TRACKING === "true";
   const [inputType, setInputType] = useState<"tx" | "address">("tx");
   const [form, setForm] = useState({
     txHash: "",
@@ -103,6 +105,22 @@ export default function TracePage() {
         </p>
       </div>
 
+      {/* ── Engine Status Banner (Shown when live multi-chain crawler is in maintenance) ── */}
+      {!isCustomTrackingEnabled && (
+        <EngineStatusBanner
+          onSelectPreset={() => {
+            setInputType("address");
+            setForm((prev) => ({
+              ...prev,
+              address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+              chain: "ethereum",
+              case_id: "CASE-2024-IN-0891",
+              submitted_by: "Special Cell Cyber PS, New Delhi",
+            }));
+          }}
+        />
+      )}
+
       {/* ── Main Form Card ── */}
       <div className="bg-white border border-[#ECF1F2] rounded-2xl overflow-hidden shadow-sm">
 
@@ -149,13 +167,24 @@ export default function TracePage() {
           </div>
 
           {/* Quick-Load Forensic Test Scenarios */}
-          <div className="bg-[#F8FAFA] border border-[#ECF1F2] rounded-xl p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
+          <div
+            className={`rounded-xl p-4 flex flex-col gap-3 transition-all ${
+              !isCustomTrackingEnabled
+                ? "bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-blue-50/70 border-2 border-blue-200/90 shadow-xs"
+                : "bg-[#F8FAFA] border border-[#ECF1F2]"
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-[11px] font-bold text-[#273339] uppercase tracking-wider flex items-center gap-1.5 font-eyebrow">
                 <ShieldIcon size={13} className="text-[#3770FF]" />
                 Forensic Scenario Presets
+                {!isCustomTrackingEnabled && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 ml-1">
+                    VERIFIED CASES AVAILABLE
+                  </span>
+                )}
               </span>
-              <span className="text-[10px] text-[#90999E] font-medium">Click to populate official test vector</span>
+              <span className="text-[10px] text-[#616B70] font-medium">Click any card to load test vector</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {(inputType === "address" ? [
@@ -192,7 +221,14 @@ export default function TracePage() {
           {/* Primary Input Field with Inset Depth & Prefix */}
           {inputType === "tx" ? (
             <div>
-              <Label required>Transaction Hash <DemoBadge id="trace_tx_hash" /></Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label required>Transaction Hash <DemoBadge id="trace_tx_hash" /></Label>
+                {!isCustomTrackingEnabled && (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-eyebrow">
+                    LOCKED TO PRESETS
+                  </span>
+                )}
+              </div>
               <div className="relative flex items-center">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[11px] font-mono font-bold text-[#90999E] select-none bg-[#F5F7F7] border border-[#ECF1F2] px-2 py-0.5 rounded-md">
                   TX
@@ -202,12 +238,44 @@ export default function TracePage() {
                   required
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="0x… (Paste full 66-character scam tx hash)"
+                  placeholder={
+                    !isCustomTrackingEnabled
+                      ? "Sandbox Active · Click a preset card above to populate verified tx"
+                      : "0x… (Paste full 66-character scam tx hash)"
+                  }
                   value={form.txHash}
-                  onChange={(e) => setForm({ ...form, txHash: e.target.value })}
-                  className="w-full bg-white border border-[#D0DADB] focus:border-[#3770FF] focus:ring-4 focus:ring-[#3770FF]/10 rounded-xl pl-13 pr-4 py-3 text-[13px] text-[#273339] font-mono outline-none transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                  readOnly={!isCustomTrackingEnabled}
+                  onChange={(e) => {
+                    if (isCustomTrackingEnabled) {
+                      setForm({ ...form, txHash: e.target.value });
+                    }
+                  }}
+                  onClick={() => {
+                    if (!isCustomTrackingEnabled && !form.txHash) {
+                      setForm({
+                        ...form,
+                        txHash: "0x7615548c7fe87f4c4d0f51cbb30011b81dcbe6126153afccea3fcd371a2620cf",
+                        chain: "ethereum",
+                        case_id: "CASE-2024-TX-0891",
+                        submitted_by: "Cyber Crime CID, Bengaluru",
+                      });
+                    }
+                  }}
+                  className={`w-full bg-white border rounded-xl pl-13 pr-4 py-3 text-[13px] text-[#273339] font-mono outline-none transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] ${
+                    !isCustomTrackingEnabled
+                      ? "border-blue-200/90 bg-slate-50/50 cursor-pointer"
+                      : "border-[#D0DADB] focus:border-[#3770FF] focus:ring-4 focus:ring-[#3770FF]/10"
+                  }`}
                 />
               </div>
+
+              {!isCustomTrackingEnabled && (
+                <p className="text-[11px] text-amber-800/90 mt-2 flex items-center gap-1.5 font-medium">
+                  <InfoIcon size={12} className="text-amber-600 shrink-0" />
+                  Arbitrary crawling paused during node maintenance. Select any preset above to test instant multi-hop traversal.
+                </p>
+              )}
+
               {form.txHash.length >= 60 && (
                 <div className="mt-3 bg-[#F8FAFA] border border-[#ECF1F2] rounded-xl p-4 animate-fade-in flex flex-col gap-2 relative overflow-hidden shadow-xs">
                   <div className="absolute top-0 right-0 px-2 py-1 bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider font-eyebrow rounded-bl-lg">
@@ -229,14 +297,23 @@ export default function TracePage() {
                   </div>
                 </div>
               )}
-              <p className="text-[11px] text-[#90999E] mt-3 flex items-center gap-1.5">
-                <InfoIcon size={12} className="text-[#3770FF]" />
-                Time barrier is automatically applied to trace only downstream money laundering.
-              </p>
+              {isCustomTrackingEnabled && (
+                <p className="text-[11px] text-[#90999E] mt-3 flex items-center gap-1.5">
+                  <InfoIcon size={12} className="text-[#3770FF]" />
+                  Time barrier is automatically applied to trace only downstream money laundering.
+                </p>
+              )}
             </div>
           ) : (
             <div>
-              <Label required>Suspect Wallet Address <DemoBadge id="trace_input" /></Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label required>Suspect Wallet Address <DemoBadge id="trace_input" /></Label>
+                {!isCustomTrackingEnabled && (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-eyebrow">
+                    LOCKED TO PRESETS
+                  </span>
+                )}
+              </div>
               <div className="relative flex items-center">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[11px] font-mono font-bold text-[#90999E] select-none bg-[#F5F7F7] border border-[#ECF1F2] px-2 py-0.5 rounded-md">
                   0x
@@ -246,12 +323,42 @@ export default function TracePage() {
                   required
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="Paste destination or suspect wallet address…"
+                  placeholder={
+                    !isCustomTrackingEnabled
+                      ? "Sandbox Active · Click a preset card above to populate verified wallet"
+                      : "Paste destination or suspect wallet address…"
+                  }
                   value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  className="w-full bg-white border border-[#D0DADB] focus:border-[#3770FF] focus:ring-4 focus:ring-[#3770FF]/10 rounded-xl pl-13 pr-4 py-3 text-[13px] text-[#273339] font-mono outline-none transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                  readOnly={!isCustomTrackingEnabled}
+                  onChange={(e) => {
+                    if (isCustomTrackingEnabled) {
+                      setForm({ ...form, address: e.target.value });
+                    }
+                  }}
+                  onClick={() => {
+                    if (!isCustomTrackingEnabled && !form.address) {
+                      setForm({
+                        ...form,
+                        address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+                        chain: "ethereum",
+                        case_id: "CASE-2024-IN-0891",
+                        submitted_by: "Special Cell Cyber PS, New Delhi",
+                      });
+                    }
+                  }}
+                  className={`w-full bg-white border rounded-xl pl-13 pr-4 py-3 text-[13px] text-[#273339] font-mono outline-none transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] ${
+                    !isCustomTrackingEnabled
+                      ? "border-blue-200/90 bg-slate-50/50 cursor-pointer"
+                      : "border-[#D0DADB] focus:border-[#3770FF] focus:ring-4 focus:ring-[#3770FF]/10"
+                  }`}
                 />
               </div>
+              {!isCustomTrackingEnabled && (
+                <p className="text-[11px] text-amber-800/90 mt-2 flex items-center gap-1.5 font-medium">
+                  <InfoIcon size={12} className="text-amber-600 shrink-0" />
+                  Arbitrary crawling paused during node maintenance. Select any preset above to test instant multi-hop traversal.
+                </p>
+              )}
               {form.address && (
                 <p className="text-[11px] text-[#90999E] mt-2 font-mono">{form.address.length} characters detected</p>
               )}

@@ -474,8 +474,14 @@ func scanRPCBlock(chain, httpURL, blockHex string) {
 func sendEmailAlert(toEmail, targetAddr, direction, fromAddr, toAddr, amount, token, chain, block, hash string) {
 	from := os.Getenv("SMTP_EMAIL")
 	password := os.Getenv("SMTP_PASSWORD")
-	smtpHost := "smtp.gmail.com"
-	smtpPort := "587"
+	smtpHost := os.Getenv("SMTP_HOST")
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	smtpPort := os.Getenv("SMTP_PORT")
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
 
 	if from == "" || password == "" || toEmail == "" {
 		return

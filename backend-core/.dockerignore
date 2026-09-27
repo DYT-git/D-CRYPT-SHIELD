@@ -1,0 +1,6 @@
+server.exe
+*.exe
+*.log
+.env
+.git
+out.txt
