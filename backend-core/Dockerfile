@@ -1,5 +1,7 @@
-# Multi-stage Docker build for D-CRYPT SHIELD Backend
-FROM golang:1.24-alpine AS builder
+FROM golang:alpine AS builder
+
+# Allow Go to automatically match and fetch needed toolchain version
+ENV GOTOOLCHAIN=auto
 
 WORKDIR /app
 
