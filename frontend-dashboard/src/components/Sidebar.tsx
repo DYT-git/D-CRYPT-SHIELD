@@ -1,118 +1,120 @@
 "use client";
+
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { DashboardIcon, SearchIcon, ActivityIcon, FileTextIcon, ShieldIcon, SettingsIcon, SunIcon, MoonIcon, ZapIcon } from "./Icons";
-import { useTheme } from "./ThemeProvider";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import {
+  DashboardIcon,
+  ActivityIcon,
+  ZapIcon,
+  FolderIcon,
+  DatabaseIcon,
+  FileTextIcon,
+  SettingsIcon,
+} from "./Icons";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const [role, setRole] = useState<string | null>(null);
 
-  const navGroups = [
-    {
-      title: "Investigations",
-      links: [
-        { href: "/", label: "Dashboard", icon: DashboardIcon },
-        { href: "/trace", label: "Trace Wallet", icon: ActivityIcon },
-        { href: "/live-tracking", label: "Live Tracking", icon: ZapIcon },
-        { href: "/cases", label: "All Cases", icon: ShieldIcon },
-      ]
-    },
-    {
-      title: "Intelligence",
-      links: [
-        { href: "/lookup", label: "VASP Database", icon: SearchIcon },
-        { href: "/reports", label: "Intel Reports", icon: FileTextIcon },
-      ]
-    },
-    {
-      title: "Preferences",
-      links: [
-        { href: "/settings", label: "Settings", icon: SettingsIcon },
-      ]
-    }
-  ];
+  useEffect(() => {
+    setRole(localStorage.getItem("userRole"));
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("userRole");
+    router.push("/login");
+  };
+
+  const navLinks =
+    role === "civilian"
+      ? [
+          { href: "/civilian", label: "Submit Report", icon: FileTextIcon },
+        ]
+      : [
+          { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
+          { href: "/trace", label: "Trace Wallet", icon: ActivityIcon },
+          { href: "/live-tracking", label: "Live Tracking", icon: ZapIcon },
+          { href: "/cases", label: "All Cases", icon: FolderIcon },
+          { href: "/lookup", label: "VASP Database", icon: DatabaseIcon },
+          { href: "/reports", label: "Intel Reports", icon: FileTextIcon },
+          { href: "/settings", label: "Settings", icon: SettingsIcon },
+        ];
 
   return (
-    <div className="w-[260px] h-full bg-white flex flex-col py-6 border-r border-slate-200 shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
+    <aside className="w-64 h-full bg-white/85 backdrop-blur-xl flex flex-col border-r border-[#13123A]/8 shadow-2xs font-sans select-none shrink-0">
       
-      {/* Brand */}
-      <div className="px-6 mb-8 flex items-center gap-3">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shrink-0">
-          <ShieldIcon size={16} className="text-white" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-[15px] font-black text-slate-900 tracking-tight leading-tight">D-CRYPT Tracer</span>
-          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">LEA Investigation Portal</span>
-        </div>
+      {/* ── Top Corner Brand: Crisp, Midnight Ink Wordmark ── */}
+      <div className="h-16 px-6 flex items-center border-b border-[#13123A]/8">
+        <Link href={role === "civilian" ? "/civilian" : "/dashboard"} className="flex items-center group">
+          <span className="text-[19px] font-black tracking-[-0.02em] text-[#0F172A] uppercase font-eyebrow flex items-center gap-1.5 leading-none group-hover:opacity-90 transition-opacity">
+            D-CRYPT <span className="text-[#2563EB]">SHIELD</span>
+          </span>
+        </Link>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 flex flex-col gap-6 overflow-y-auto px-4 scrollbar-hide">
-        {navGroups.map((group) => (
-          <div key={group.title} className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-1">
-              {group.title}
-            </span>
-            {group.links.map((link) => {
-              const active = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`
-                    flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all duration-200 group
-                    ${active 
-                      ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100/50" 
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent"
-                    }
-                  `}
-                >
-                  <link.icon 
-                    size={16} 
-                    className={active ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} 
-                  />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+      {/* ── Main Navigation List ── */}
+      <nav className="flex-1 px-3 pt-5 pb-3 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
+        <div className="px-3 pb-2 text-[10px] font-bold text-[#757995] uppercase tracking-wider font-eyebrow">
+          {role === "civilian" ? "Civilian Portal" : "Forensic Console"}
+        </div>
+
+        {navLinks.map((link) => {
+          const isActive =
+            pathname === link.href ||
+            (link.href !== "/dashboard" && pathname.startsWith(link.href));
+          const Icon = link.icon;
+
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-150 ${
+                isActive
+                  ? "bg-[#3770FF]/10 text-[#3770FF] shadow-2xs font-bold"
+                  : "text-[#515470] hover:text-[#13123A] hover:bg-white/60"
+              }`}
+            >
+              {/* Left active indicator bar */}
+              {isActive && (
+                <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#3770FF] rounded-r-full" />
+              )}
+              <Icon
+                size={17}
+                className={isActive ? "text-[#3770FF]" : "text-[#757995]"}
+                strokeWidth={isActive ? 2 : 1.75}
+              />
+              <span className="truncate">{link.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Footer Controls */}
-      <div className="px-4 mt-auto pt-6 flex flex-col gap-2">
-        {/* Dark mode toggle */}
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-50 border border-transparent transition-all duration-200"
-        >
-          {theme === "dark"
-            ? <SunIcon size={16} className="text-amber-500" />
-            : <MoonIcon size={16} className="text-slate-400" />
-          }
-          {theme === "dark" ? "Light Mode" : "Dark Mode"}
-        </button>
-
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-3 shadow-sm hover:border-slate-300 transition-colors cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-[11px] border border-blue-200 shrink-0">
-              AS
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-slate-900 truncate">Insp. A. Sharma</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate mt-0.5">Cyber Cell Unit</p>
-            </div>
+      {/* ── Bottom Officer Profile & Sign Out ── */}
+      <div className="p-4 border-t border-[#13123A]/8 bg-white/40 backdrop-blur-sm flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-[#D2E0FF] text-[#3770FF] font-mono font-bold flex items-center justify-center text-[12px] border border-[#B8D0FF] shrink-0">
+            {role === "civilian" ? "CV" : "AS"}
           </div>
-          <div className="h-px w-full bg-slate-200"></div>
-          <div className="flex items-center gap-2 px-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 relative">
-              <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
-            </div>
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">D-CRYPT Core Online</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-[#13123A] truncate leading-tight">
+              {role === "civilian" ? "Civilian User" : "Insp. A. Sharma"}
+            </p>
+            <p className="text-[10px] text-[#757995] font-medium truncate mt-0.5 font-eyebrow uppercase tracking-wide">
+              {role === "civilian" ? "Verified Citizen" : "Special Cell Unit"}
+            </p>
           </div>
         </div>
+
+        <button
+          onClick={handleLogout}
+          className="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[#757995] hover:text-[#A32C00] hover:bg-red-50/70 transition-colors flex items-center justify-between cursor-pointer"
+        >
+          <span>End Session</span>
+          <span className="text-[10px] uppercase font-eyebrow">Sign Out →</span>
+        </button>
       </div>
-    </div>
+    </aside>
   );
 }

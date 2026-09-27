@@ -1,12 +1,105 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Inter', var(--font-nunito), system-ui, -apple-system, sans-serif;
+  --font-eyebrow: var(--font-montserrat), sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-devfolio-blue: #3770ff;
+  --color-devfolio-blue-hover: #2368fb;
+  --color-devfolio-blue-active: #143be2;
+  --color-devfolio-blue-light: #d2e0ff;
+  --color-devfolio-blue-wash: #f0f4ff;
+  --color-devfolio-blue-glow: #8097f2;
+
+  --color-devfolio-canvas: #F8FAFF;
+  --color-devfolio-card: #ffffff;
+  --color-devfolio-deck: #fcfcfc;
+
+  --color-devfolio-heading: #13123A;
+  --color-devfolio-body: #3B3E5B;
+  --color-devfolio-muted: #757995;
+  --color-devfolio-gray: #989CAE;
+
+  --color-devfolio-border: rgba(19, 18, 58, 0.08);
+  --color-devfolio-border-input: #D2D6E4;
+
+  --color-devfolio-mint: #00e97b;
+  --color-devfolio-teal: #58d1bd;
+  --color-devfolio-sun: #ffd74a;
+  --color-devfolio-success: #cffeed;
+  --color-devfolio-success-text: #025c50;
+  --color-devfolio-metric-green: #0fa38d;
+  --color-devfolio-danger: #fed0cf;
+  --color-devfolio-danger-text: #a32c00;
+  --color-devfolio-warn: #ffffa4;
+  --color-devfolio-warn-text: #d65600;
+}
+
+:root {
+  --font-nunito: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-montserrat: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-space-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --rynne-wash: 
+    radial-gradient(120% 80% at 8% -10%, rgba(55, 112, 255, 0.12), transparent 52%),
+    radial-gradient(90% 70% at 96% 4%, rgba(121, 82, 252, 0.09), transparent 48%),
+    radial-gradient(70% 45% at 50% 110%, rgba(237, 232, 253, 0.5), transparent 58%),
+    linear-gradient(180deg, #F8FAFF 0%, #FAFBFC 42%, #F4F6FC 100%);
+}
+
 html, body {
-  height: 100%;
-  background-color: #f8fafc;
-  color: #0f172a;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  min-height: 100%;
+  background-color: #F8FAFF;
+  color: #13123A;
+  font-family: var(--font-nunito), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body:before {
+  content: "";
+  background: var(--rynne-wash);
+  z-index: -1;
+  pointer-events: none;
+  width: 100%;
+  height: 100lvh;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* ── Typography Utilities ────────────────────────────────────────── */
+.font-sans { font-family: var(--font-nunito), system-ui, -apple-system, sans-serif; }
+.font-eyebrow { font-family: var(--font-montserrat), sans-serif; }
+.font-mono { font-family: var(--font-space-mono), monospace; }
+
+/* ── Devfolio Signature Highlighter Underlines ──────────────────── */
+.devfolio-highlight {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+.devfolio-highlight::after {
+  content: '';
+  position: absolute;
+  display: block;
+  height: 10px;
+  bottom: 6px;
+  left: -2px;
+  width: 104%;
+  background-color: #00e97b;
+  z-index: -1;
+  border-radius: 2px;
+  opacity: 0.95;
+}
+
+.devfolio-highlight-blue::after {
+  background-color: #3770ff;
+}
+
+.devfolio-highlight-teal::after {
+  background-color: #58d1bd;
 }
 
 /* ── Crisp, Professional Scrollbars ─────────────────────────────── */
@@ -16,7 +109,7 @@ html, body {
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* ── Selection ─────────────────────────────────────────────── */
-::selection { background: rgba(37,99,235,0.2); color: #0f172a; }
+::selection { background: rgba(55, 112, 255, 0.2); color: #13123A; }
 
 /* ── Animations ─────────────────────────────────────────────── */
 @keyframes fade-in {
@@ -26,35 +119,35 @@ html, body {
 .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
 
 /* ══════════════════════════════════════════════════════════════════
-   LIGHT THEME (default / data-theme="light")
-══════════════════════════════════════════════════════════════════ */
+   LIGHT THEME (Rynne-Aligned Ethereal Frost & Midnight Ink)
+ ══════════════════════════════════════════════════════════════════ */
 :root, [data-theme="light"] {
-  --bg-body:          #f8fafc;
-  --bg-header:        #f1f5f9;
-  --bg-elevated:      #e2e8f0;
-  --border-color:     #e2e8f0;
+  --bg-body:          transparent;
+  --bg-header:        rgba(255, 255, 255, 0.88);
+  --bg-elevated:      #FFFFFF;
+  --border-color:     rgba(19, 18, 58, 0.08);
 
-  --text-1:           #0f172a;
-  --text-2:           #475569;
-  --text-3:           #94a3b8;
+  --text-1:           #13123A;
+  --text-2:           #3B3E5B;
+  --text-3:           #757995;
 
-  --accent:           #2563eb;
-  --accent-bg:        #eff6ff;
-  --accent-border:    #bfdbfe;
+  --accent:           #3770FF;
+  --accent-bg:        #F0F4FF;
+  --accent-border:    #D2E0FF;
 
-  --warn-bg:          #fffbeb;
-  --warn-text:        #92400e;
-  --warn-border:      #fde68a;
+  --warn-bg:          #FFF9EB;
+  --warn-text:        #B45309;
+  --warn-border:      #FDE68A;
 
-  --danger-bg:        #fff1f2;
-  --danger-text:      #be123c;
-  --danger-border:    #fecdd3;
+  --danger-bg:        #FFF1F2;
+  --danger-text:      #BE123C;
+  --danger-border:    #FECDD3;
 
-  --success-bg:       #f0fdf4;
-  --success-text:     #15803d;
-  --success-border:   #bbf7d0;
+  --success-bg:       #F0FDF4;
+  --success-text:     #15803D;
+  --success-border:   #BBF7D0;
 
-  --hover-bg:         rgba(0,0,0,0.02);
+  --hover-bg:         rgba(255, 255, 255, 0.6);
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -90,13 +183,18 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   GLASS PANEL — used heavily in case detail page
+   GLASS PANEL — used heavily in case detail + live-tracking pages
+   Light mode: clean white card with ECF1F2 border
+   Dark mode: uses CSS vars as before
 ══════════════════════════════════════════════════════════════════ */
 .glass-panel {
-  background-color: var(--bg-header);
-  border: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(19, 18, 58, 0.08);
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  box-shadow: 0 1px 3px rgba(19, 18, 58, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 [data-theme="dark"] .glass-panel {
@@ -128,3 +226,150 @@ html, body {
 [data-theme="dark"] .text-slate-500 {
   color: var(--text-2) !important;
 }
+
+/* ── Utility: hide scrollbar ────────────────────── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Custom scrollbar (dark terminal) ──────────────── */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Stat card hover lift ─────────────────────── */
+.stat-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(19, 18, 58, 0.08);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(19, 18, 58, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+}
+.stat-card:hover {
+  box-shadow: 0 8px 24px rgba(55, 112, 255, 0.12);
+  border-color: rgba(55, 112, 255, 0.35);
+  transform: translateY(-2px);
+}
+
+/* ── Precision Forensic Input Box ─────────────── */
+.forensic-input {
+  background-color: #ffffff;
+  border: 1px solid #D2D6E4;
+  border-radius: 0.75rem;
+  box-shadow: inset 0 1px 2px rgba(19, 18, 58, 0.02);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #13123A;
+}
+.forensic-input:hover {
+  border-color: #A8B1C8;
+}
+.forensic-input:focus {
+  outline: none;
+  border-color: #3770FF;
+  box-shadow: 0 0 0 3px rgba(55, 112, 255, 0.14);
+}
+
+/* ── Remove native number input spinners ────────── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ── Range Slider Track ────────────────────────── */
+input[type="range"] {
+  accent-color: #3770FF;
+  cursor: pointer;
+}
+
+/* ── Hero Dot-Grid Texture ──────────────────────────────────────── */
+.hero-dot-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(55, 112, 255, 0.13) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: radial-gradient(ellipse 90% 80% at 40% 0%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 40% 0%, black 20%, transparent 80%);
+}
+
+/* ── Card Glow on Hover ─────────────────────────────────────────── */
+.card-glow-hover {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+.card-glow-hover:hover {
+  box-shadow: 0 8px 32px rgba(55, 112, 255, 0.14), 0 2px 8px rgba(55, 112, 255, 0.06);
+  border-color: rgba(55, 112, 255, 0.38) !important;
+  transform: translateY(-3px);
+}
+
+/* ── Section Entrance Fade ──────────────────────────────────────── */
+@keyframes section-reveal {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.section-fade {
+  animation: section-reveal 0.45s ease-out forwards;
+}
+
+/* ── Chain Badge Color Variants ─────────────────────────────────── */
+.chain-eth  {
+  background: linear-gradient(135deg, rgba(98,126,234,0.15), rgba(98,126,234,0.06));
+  border: 1px solid rgba(98,126,234,0.35);
+  color: #627EEA;
+}
+.chain-matic {
+  background: linear-gradient(135deg, rgba(130,71,229,0.15), rgba(130,71,229,0.06));
+  border: 1px solid rgba(130,71,229,0.35);
+  color: #8247E5;
+}
+.chain-bsc  {
+  background: linear-gradient(135deg, rgba(240,185,11,0.2), rgba(240,185,11,0.07));
+  border: 1px solid rgba(240,185,11,0.45);
+  color: #997300;
+}
+.chain-arb  {
+  background: linear-gradient(135deg, rgba(40,160,240,0.15), rgba(40,160,240,0.06));
+  border: 1px solid rgba(40,160,240,0.35);
+  color: #28A0F0;
+}
+.chain-trx  {
+  background: linear-gradient(135deg, rgba(255,6,10,0.12), rgba(255,6,10,0.05));
+  border: 1px solid rgba(255,6,10,0.30);
+  color: #CC0508;
+}
+.chain-btc  {
+  background: linear-gradient(135deg, rgba(247,147,26,0.18), rgba(247,147,26,0.06));
+  border: 1px solid rgba(247,147,26,0.40);
+  color: #C57415;
+}
+
+/* ── Auth Terminal Card Glow ────────────────────────────────────── */
+.terminal-card-glow {
+  box-shadow: 0 4px 24px rgba(55, 112, 255, 0.10), 0 1px 4px rgba(3, 0, 92, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+.terminal-card-glow:hover {
+  box-shadow: 0 8px 40px rgba(55, 112, 255, 0.16), 0 2px 8px rgba(3, 0, 92, 0.06);
+}
+
+/* ── Institutional Marquee Ticker ──────────────────────────────── */
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-ticker {
+  display: flex;
+  width: max-content;
+  animation: ticker 32s linear infinite;
+}
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+

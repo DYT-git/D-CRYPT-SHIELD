@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"math"
+	"math/big"
 	"net/http"
 	"os"
 	"strconv"
@@ -12,7 +15,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"log"
 
 	"vasp-engine/internal/models"
 )
@@ -296,6 +298,24 @@ func (f *Fetcher) fetchViaCovalent(ctx context.Context, address, chain, directio
 				Value         string  `json:"value"`
 				ValueQuote    float64 `json:"value_quote"`
 				Successful    bool    `json:"successful"`
+				LogEvents     []struct {
+					BlockSignedAt              string `json:"block_signed_at"`
+					TxHash                     string `json:"tx_hash"`
+					SenderAddress              string `json:"sender_address"`
+					SenderName                 string `json:"sender_name"`
+					SenderContractTickerSymbol string `json:"sender_contract_ticker_symbol"`
+					SenderContractDecimals     int    `json:"sender_contract_decimals"`
+					Decoded                    *struct {
+						Name   string `json:"name"`
+						Params []struct {
+							Name  string `json:"name"`
+							Type  string `json:"type"`
+							Value any    `json:"value"`
+						} `json:"params"`
+					} `json:"decoded"`
+					RawLogTopics []string `json:"raw_log_topics"`
+					RawLogData   string   `json:"raw_log_data"`
+				} `json:"log_events"`
 			} `json:"items"`
 		} `json:"data"`
 		Error        bool   `json:"error"`
@@ -317,17 +337,16 @@ func (f *Fetcher) fetchViaCovalent(ctx context.Context, address, chain, directio
 			continue
 		}
 
+		// Parse timestamp
+		var ts time.Time
+		if item.BlockSignedAt != "" {
+			ts, _ = time.Parse(time.RFC3339, item.BlockSignedAt)
+		}
+
 		isOutgoing := strings.EqualFold(item.FromAddress, address)
 		isIncoming := strings.EqualFold(item.ToAddress, address)
 
-		if direction == "outgoing" && !isOutgoing {
-			continue
-		}
-		if direction == "incoming" && !isIncoming {
-			continue
-		}
-
-		// Parse wei value → token amount
+		// 1. Native coin transfer (ETH, BNB, MATIC, etc.)
 		valFloat := 0.0
 		if item.Value != "" && item.Value != "0" {
 			if v, err := strconv.ParseFloat(item.Value, 64); err == nil {
@@ -335,43 +354,153 @@ func (f *Fetcher) fetchViaCovalent(ctx context.Context, address, chain, directio
 			}
 		}
 
-		// Use Covalent's built-in USD conversion (already converted for us!)
 		valueUSD := item.ValueQuote
 		if valueUSD == 0 && valFloat > 0 {
 			valueUSD = valFloat * fetchLivePrice(evmChainNativeToken(chain))
 		}
 
-		// Parse timestamp
-		var ts time.Time
-		if item.BlockSignedAt != "" {
-			ts, _ = time.Parse(time.RFC3339, item.BlockSignedAt)
+		if (direction == "outgoing" && isOutgoing) || (direction == "incoming" && isIncoming) || (direction == "both" && (isOutgoing || isIncoming)) {
+			if valFloat > 0 || valueUSD > 0 {
+				dir := "outgoing"
+				if strings.EqualFold(item.ToAddress, addrLower) {
+					dir = "incoming"
+				}
+
+				toAddr := item.ToAddress
+				if toAddr == "" {
+					toAddr = "0x0000000000000000000000000000000000000000" // contract creation
+				}
+
+				txns = append(txns, models.Transaction{
+					Hash:            item.TxHash,
+					FromAddress:     item.FromAddress,
+					ToAddress:       toAddr,
+					Amount:          valFloat,
+					ValueUSD:        valueUSD,
+					TokenSymbol:     evmChainNativeToken(chain),
+					AssetIdentifier: "native",
+					Direction:       dir,
+					Timestamp:       ts,
+					PriceFetched:    valueUSD / max64(valFloat, 0.000001),
+				})
+			}
 		}
 
-		dir := "outgoing"
-		if strings.EqualFold(item.ToAddress, addrLower) {
-			dir = "incoming"
-		}
+		// 2. Parse ERC-20 / stablecoin token transfers (USDT, USDC, DAI, etc.) from log_events
+		for _, logEv := range item.LogEvents {
+			isTransfer := false
+			var fromAddr, toAddr, rawValStr string
 
-		toAddr := item.ToAddress
-		if toAddr == "" {
-			toAddr = "0x0000000000000000000000000000000000000000" // contract creation
-		}
+			if logEv.Decoded != nil && strings.EqualFold(logEv.Decoded.Name, "Transfer") {
+				isTransfer = true
+				for _, p := range logEv.Decoded.Params {
+					switch strings.ToLower(p.Name) {
+					case "from":
+						fromAddr = fmt.Sprintf("%v", p.Value)
+					case "to":
+						toAddr = fmt.Sprintf("%v", p.Value)
+					case "value":
+						rawValStr = fmt.Sprintf("%v", p.Value)
+					}
+				}
+			} else if len(logEv.RawLogTopics) >= 3 && strings.HasPrefix(strings.ToLower(logEv.RawLogTopics[0]), "0xddf252ad") {
+				isTransfer = true
+				t1 := logEv.RawLogTopics[1]
+				t2 := logEv.RawLogTopics[2]
+				if len(t1) >= 40 {
+					fromAddr = "0x" + t1[len(t1)-40:]
+				}
+				if len(t2) >= 40 {
+					toAddr = "0x" + t2[len(t2)-40:]
+				}
+				rawValStr = logEv.RawLogData
+			}
 
-		txns = append(txns, models.Transaction{
-			Hash:            item.TxHash,
-			FromAddress:     item.FromAddress,
-			ToAddress:       toAddr,
-			Amount:          valFloat,
-			ValueUSD:        valueUSD,
-			TokenSymbol:     evmChainNativeToken(chain),
-			AssetIdentifier: "native",
-			Direction:       dir,
-			Timestamp:       ts,
-			PriceFetched:    valueUSD / max64(valFloat, 0.000001),
-		})
+			if !isTransfer || fromAddr == "" || toAddr == "" {
+				continue
+			}
+
+			fromAddr = strings.ToLower(fromAddr)
+			toAddr = strings.ToLower(toAddr)
+
+			isTokenOut := strings.EqualFold(fromAddr, addrLower)
+			isTokenIn := strings.EqualFold(toAddr, addrLower)
+
+			if direction == "outgoing" && !isTokenOut {
+				continue
+			}
+			if direction == "incoming" && !isTokenIn {
+				continue
+			}
+			if direction != "outgoing" && direction != "incoming" && !isTokenOut && !isTokenIn {
+				continue
+			}
+
+			// Decimals
+			decimals := logEv.SenderContractDecimals
+			tokenSym := logEv.SenderContractTickerSymbol
+			if tokenSym == "" {
+				tokenSym = "TOKEN"
+			}
+			upperSym := strings.ToUpper(tokenSym)
+
+			if decimals <= 0 {
+				if upperSym == "USDT" || upperSym == "USDC" {
+					decimals = 6
+				} else if upperSym == "WBTC" {
+					decimals = 8
+				} else {
+					decimals = 18
+				}
+			}
+
+			var rawVal float64
+			if strings.HasPrefix(rawValStr, "0x") {
+				if bigInt, ok := new(big.Int).SetString(strings.TrimPrefix(rawValStr, "0x"), 16); ok {
+					rawVal, _ = bigInt.Float64()
+				}
+			} else {
+				rawVal, _ = strconv.ParseFloat(rawValStr, 64)
+			}
+
+			tokenAmount := rawVal / math.Pow(10, float64(decimals))
+			if tokenAmount <= 0 {
+				continue
+			}
+
+			var tokenUSD float64
+			if upperSym == "USDT" || upperSym == "USDC" || upperSym == "DAI" || upperSym == "BUSD" || upperSym == "FDUSD" || upperSym == "TUSD" {
+				tokenUSD = tokenAmount * 1.0 // 1:1 USD peg
+			} else {
+				livePrice := fetchLivePrice(tokenSym)
+				if livePrice > 0 {
+					tokenUSD = tokenAmount * livePrice
+				} else {
+					tokenUSD = tokenAmount
+				}
+			}
+
+			tokDir := "outgoing"
+			if isTokenIn {
+				tokDir = "incoming"
+			}
+
+			txns = append(txns, models.Transaction{
+				Hash:            item.TxHash,
+				FromAddress:     fromAddr,
+				ToAddress:       toAddr,
+				Amount:          tokenAmount,
+				ValueUSD:        tokenUSD,
+				TokenSymbol:     tokenSym,
+				AssetIdentifier: fmt.Sprintf("%s+erc20+%s", chain, strings.ToLower(logEv.SenderAddress)),
+				Direction:       tokDir,
+				Timestamp:       ts,
+				PriceFetched:    tokenUSD / max64(tokenAmount, 0.000001),
+			})
+		}
 	}
 
-	log.Printf("[COVALENT] ✅ Fetched %d transactions for %s on %s", len(txns), address[:min(10, len(address))], chainSlug)
+	log.Printf("[COVALENT] ✅ Fetched %d transactions (native + ERC20) for %s on %s", len(txns), address[:min(10, len(address))], chainSlug)
 	return txns, nil
 }
 

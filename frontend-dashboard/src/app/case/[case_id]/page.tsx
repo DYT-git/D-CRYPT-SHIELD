@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import FlowChart from "@/components/FlowChart";
+import PdfViewerModal from "@/components/PdfViewerModal";
+import Link from "next/link";
 import {
   CheckCircleIcon, CopyIcon, RefreshIcon as RefreshCcwIcon,
   AlertCircleIcon as ShieldAlertIcon, FileTextIcon,
   ActivityIcon as RouteIcon, AlertCircleIcon as AlertTriangleIcon, ActivityIcon,
   NetworkIcon, SearchIcon, ZapIcon as BotIcon, ClockIcon, ExternalIcon,
-  ChevronRight,
+  ChevronRight, DownloadIcon, XIcon,
 } from "@/components/Icons";
+import DemoBadge from "@/components/DemoBadge";
 
 // Lazy-load the heavy force graph (no SSR)
 const TransactionGraph = dynamic(() => import("@/components/TransactionGraph"), { ssr: false });
@@ -121,13 +125,6 @@ interface Portfolio {
   chains: ChainPortfolio[];
 }
 
-interface TransportResult {
-  success: boolean;
-  message: string;
-  payload_hash: string;
-  timestamp: string;
-  transport_name: string;
-}
 
 // ─────────────────────────────────────────────────────────────
 // Small helpers
@@ -471,17 +468,38 @@ export default function CasePage() {
   const [copied, setCopied]       = useState<string | null>(null);
   const [graphTab, setGraphTab]   = useState<"flow" | "network">("flow");
 
-  // Export
-  const [isGeneratingReport,   setIsGeneratingReport]   = useState(false);
+  // Export & Viewer
   const [isGeneratingEvidence, setIsGeneratingEvidence] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  // Integration
-  const [isPreparingDisclosure, setIsPreparingDisclosure] = useState(false);
-  const [isPreparingFreeze,     setIsPreparingFreeze]     = useState(false);
-  const [integrationPayload,    setIntegrationPayload]    = useState<any>(null);
-  const [integrationResult,     setIntegrationResult]     = useState<TransportResult | null>(null);
-  const [integrationError,      setIntegrationError]      = useState<string | null>(null);
+  // PDF Viewer Modal State
+  const [viewerModal, setViewerModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    statuteBadge: string;
+    pdfUrl: string;
+    fileName: string;
+  }>({
+    isOpen: false,
+    title: "",
+    statuteBadge: "",
+    pdfUrl: "",
+    fileName: "",
+  });
+
+  // No VASP Advisory Modal State
+  const [showNoVaspAdvisory, setShowNoVaspAdvisory] = useState(false);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showNoVaspAdvisory) {
+        setShowNoVaspAdvisory(false);
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [showNoVaspAdvisory]);
+
 
   const copy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -589,30 +607,21 @@ export default function CasePage() {
     }
   };
 
-  const generateReport = () =>
-    downloadBlob(`${API}/api/v1/report/${case_id}`, `Report_${case_id}.pdf`, setIsGeneratingReport);
-
-  const exportEvidencePackage = () =>
-    downloadBlob(`${API}/api/v1/case/${case_id}/evidence-package`, `Evidence_${case_id}.zip`, setIsGeneratingEvidence);
-
-  const prepareIntegration = async (type: "disclosure" | "freeze") => {
-    const setL = type === "disclosure" ? setIsPreparingDisclosure : setIsPreparingFreeze;
-    setL(true);
-    setIntegrationError(null);
-    setIntegrationPayload(null);
-    setIntegrationResult(null);
-    try {
-      const res = await fetch(`${API}/api/v1/integration/sahyog/${type}/${case_id}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `Failed to prepare ${type}`);
-      setIntegrationPayload(json.payload);
-      setIntegrationResult(json.transport_result);
-    } catch (e: any) {
-      setIntegrationError(e.message);
-    } finally {
-      setL(false);
-    }
+  // View Case Dossier in built-in PDF viewer
+  const viewDossier = () => {
+    setViewerModal({
+      isOpen: true,
+      title: "Forensic Blockchain Investigation & Attribution Dossier",
+      statuteBadge: "SEC 65B IEA / SEC 63 BSA",
+      pdfUrl: `${API}/api/v1/report/${case_id}`,
+      fileName: `Dossier_${case_id}.pdf`,
+    });
   };
+
+  // Direct ZIP download of full cryptographic evidence archive
+  const exportEvidencePackage = () =>
+    downloadBlob(`${API}/api/v1/case/${case_id}/evidence-package`, `Evidence_Package_${case_id}.zip`, setIsGeneratingEvidence);
+
 
   const [isExtendingTrace, setIsExtendingTrace] = useState(false);
   const extendTrace = async () => {
@@ -659,6 +668,31 @@ export default function CasePage() {
   const lastHop      = displayPath[displayPath.length - 1];
   const riskLevel    = intel?.risk_level ?? (data.risk_score >= 75 ? "high" : data.risk_score >= 45 ? "medium" : "low");
 
+  const detectedVaspName = data.found_vasp?.vasp_name || (candidates[0]?.entity_type === "vasp" ? candidates[0].entity_name : "");
+  const isUnhostedOrMixer = !detectedVaspName ||
+    detectedVaspName.toLowerCase().includes("unhosted") ||
+    detectedVaspName.toLowerCase().includes("tornado") ||
+    detectedVaspName.toLowerCase().includes("mixer") ||
+    detectedVaspName.toLowerCase().includes("aave") ||
+    detectedVaspName.toLowerCase().includes("pool") ||
+    detectedVaspName.toLowerCase().includes("smart contract") ||
+    detectedVaspName === "NO_VASP_DETECTED";
+  const hasValidVasp = Boolean(detectedVaspName && !isUnhostedOrMixer);
+
+  const handleFreezeOrderAction = () => {
+    if (hasValidVasp) {
+      setViewerModal({
+        isOpen: true,
+        title: "Statutory Account Freeze & Debit Prohibition Order",
+        statuteBadge: "SEC 102 CrPC / SEC 106 BNSS",
+        pdfUrl: `${API}/api/v1/report/freeze/${case_id}`,
+        fileName: `Freeze_Order_${case_id}.pdf`,
+      });
+    } else {
+      setShowNoVaspAdvisory(true);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col gap-6 max-w-6xl mx-auto w-full pb-20 animate-fade-in">
 
@@ -686,29 +720,51 @@ export default function CasePage() {
 
         {!isTracing && (
           <div className="flex flex-col items-end gap-2">
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
+              {/* Button 1: Case Dossier */}
               <button
-                onClick={generateReport}
-                disabled={isGeneratingReport}
-                className="glass-panel px-4 py-2 hover:bg-[var(--bg-elevated)] transition-colors text-sm font-semibold text-[var(--text-1)] flex items-center gap-2 disabled:opacity-60"
+                onClick={viewDossier}
+                className="px-4 py-2 bg-[#3770FF] hover:bg-[#2368FB] text-white text-[13px] font-bold rounded-xl flex items-center gap-2 transition-all shadow-sm cursor-pointer"
               >
-                {isGeneratingReport
-                  ? <RefreshCcwIcon className="w-4 h-4 animate-spin text-[var(--accent)]" />
-                  : <FileTextIcon className="w-4 h-4 text-[var(--accent)]" />}
-                Generate PDF Report
+                <FileTextIcon className="w-4 h-4" />
+                Case Dossier (.pdf)
               </button>
+
+              {/* Button 2: Statutory Freeze Order (Conditional) */}
+              <div className="flex items-center">
+                <button
+                  onClick={handleFreezeOrderAction}
+                  className={`px-4 py-2 text-[13px] font-bold rounded-xl flex items-center gap-2 transition-all shadow-sm cursor-pointer border ${
+                    hasValidVasp
+                      ? "bg-[#DC2626] hover:bg-[#B91C1C] text-white border-red-700"
+                      : "bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300"
+                  }`}
+                  title={hasValidVasp ? "Generate Section 102 CrPC Freeze Order" : "No regulated VASP identified - Click for guidance"}
+                >
+                  <ShieldAlertIcon className="w-4 h-4" />
+                  <span>Statutory Freeze Order</span>
+                  {!hasValidVasp && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded font-mono">
+                      No VASP
+                    </span>
+                  )}
+                </button>
+                <DemoBadge id={hasValidVasp ? "case_evidence" : "case_novasp"} />
+              </div>
+
+              {/* Button 3: Evidence Package Archive */}
               <button
                 onClick={exportEvidencePackage}
                 disabled={isGeneratingEvidence}
-                className="glass-panel px-4 py-2 hover:bg-[var(--bg-elevated)] transition-colors text-sm font-semibold text-[var(--text-1)] flex items-center gap-2 disabled:opacity-60"
+                className="px-4 py-2 bg-white border border-[#D2D6E4] hover:border-[#3770FF] text-slate-700 hover:text-[#3770FF] text-[13px] font-bold rounded-xl flex items-center gap-2 transition-all shadow-sm disabled:opacity-60 cursor-pointer"
               >
                 {isGeneratingEvidence
-                  ? <RefreshCcwIcon className="w-4 h-4 animate-spin text-[var(--accent)]" />
-                  : <FileTextIcon className="w-4 h-4 text-[var(--accent)]" />}
-                Export Evidence
+                  ? <RefreshCcwIcon className="w-4 h-4 animate-spin" />
+                  : <DownloadIcon className="w-4 h-4" />}
+                Evidence Package (.zip)
               </button>
             </div>
-            {exportError && <p className="text-xs text-[var(--danger-text)]">{exportError}</p>}
+            {exportError && <p className="text-xs text-red-600">{exportError}</p>}
           </div>
         )}
       </div>
@@ -748,7 +804,10 @@ export default function CasePage() {
         <div className="glass-panel overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex items-center gap-2">
             <SearchIcon className="w-4 h-4 text-[var(--accent)]" />
-            <h2 className="text-sm font-bold text-[var(--text-1)] m-0">WHO: VASP Attribution</h2>
+            <h2 className="text-sm font-bold text-[var(--text-1)] m-0 flex items-center">
+              WHO: VASP Attribution
+              <DemoBadge id="case_vasp_attribution" />
+            </h2>
             {candidates.length > 0 && (
               <span className="ml-auto text-[10px] font-bold bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] px-2 py-0.5 rounded-full">
                 {candidates.length} candidate{candidates.length > 1 ? "s" : ""} found
@@ -831,7 +890,10 @@ export default function CasePage() {
         <div className="glass-panel overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex items-center gap-2">
             <AlertTriangleIcon className="w-4 h-4 text-[var(--accent)]" />
-            <h2 className="text-sm font-bold text-[var(--text-1)] m-0">WHY: Risk Intelligence</h2>
+            <h2 className="text-sm font-bold text-[var(--text-1)] m-0 flex items-center">
+              WHY: Risk Intelligence
+              <DemoBadge id="case_risk" />
+            </h2>
           </div>
           <div className="p-5 flex-1 flex flex-col justify-center">
             {isTracing ? (
@@ -940,14 +1002,17 @@ export default function CasePage() {
       )}
 
       {/* ── HOW: Graph ── */}
-      <div className="grid grid-cols-1 gap-6" style={{ minHeight: 650 }}>
+      <div className="grid grid-cols-1 gap-6 min-h-[480px] sm:min-h-[560px] md:min-h-[650px]">
         
         {/* D-CRYPT Shadow Graph Intelligence Panel */}
         <div className="glass-panel overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <RouteIcon className="w-4 h-4 text-[var(--accent)]" />
-              <h2 className="text-sm font-bold text-[var(--text-1)] m-0">D-CRYPT Shadow Graph</h2>
+              <h2 className="text-sm font-bold text-[var(--text-1)] m-0 flex items-center">
+                D-CRYPT Shadow Graph
+                <DemoBadge id="case_graph" />
+              </h2>
               <span className="text-[10px] font-bold bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] px-2 py-0.5 rounded-full">LIVE</span>
             </div>
             <div className="flex items-center gap-2">
@@ -958,7 +1023,7 @@ export default function CasePage() {
           </div>
 
           {/* Graph content */}
-          <div className="flex-1 relative overflow-hidden bg-[var(--bg-body)]">
+          <div className="flex-1 relative overflow-hidden bg-[var(--bg-body)] min-h-[440px] sm:min-h-[500px] md:min-h-[580px]">
             <TransactionGraph
               caseId={data.case_id}
               suspectAddress={data.suspect_address}
@@ -1015,73 +1080,131 @@ export default function CasePage() {
           </div>
         </div>
       )}
-
       {/* ── Transaction Report Table ── */}
-      <HopAuditTrail path={data.path ?? []} />
+      <div>
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <ActivityIcon className="w-4 h-4 text-[var(--accent)]" />
+          <h2 className="text-sm font-bold text-[var(--text-1)] m-0 flex items-center">
+            Forensic Hop Trail
+            <DemoBadge id="case_trace_path" />
+          </h2>
+        </div>
+        <HopAuditTrail path={data.path ?? []} />
+      </div>
 
-      {/* ── SAHYOG Integration ── */}
-      {!isTracing && (
-        <div className="glass-panel overflow-hidden">
-          <div className="px-5 py-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] flex items-center gap-2">
-            <NetworkIcon className="w-4 h-4 text-[var(--accent)]" />
-            <h2 className="text-sm font-bold text-[var(--text-1)] m-0">SAHYOG Integration (Local Preview)</h2>
-            <span className="ml-auto text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-              Not Submitted
-            </span>
-          </div>
-          <div className="p-5 flex flex-col gap-4">
-            <div className="flex gap-3 flex-wrap">
+      {/* ── No VASP Advisory Modal (Middle-Aligned Pop Up) ── */}
+      {showNoVaspAdvisory && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 animate-fade-in">
+          {/* Transparent backdrop: allows clear visibility of the case page behind */}
+          <div
+            className="fixed inset-0 bg-black/40 transition-opacity cursor-pointer"
+            onClick={() => setShowNoVaspAdvisory(false)}
+          />
+
+          {/* Centered Pop-up Dialog with Fixed Header/Footer and Scrollable Body */}
+          <div className="relative w-full max-w-lg max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-amber-300/80 flex flex-col overflow-hidden z-10 animate-fade-in">
+            {/* Fixed Top Header */}
+            <div className="px-5 py-4 border-b border-amber-100 bg-[#FFFDF7] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                  <AlertTriangleIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 uppercase font-mono">
+                    UNHOSTED WALLET TERMINATION
+                  </span>
+                  <h3 className="text-base font-bold text-[#13123A] mt-0.5">Cannot Generate Freeze Order</h3>
+                </div>
+              </div>
               <button
-                onClick={() => prepareIntegration("disclosure")}
-                disabled={isPreparingDisclosure || isPreparingFreeze}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+                onClick={() => setShowNoVaspAdvisory(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                title="Close (Esc)"
               >
-                {isPreparingDisclosure ? <RefreshCcwIcon className="w-4 h-4 animate-spin" /> : <BotIcon className="w-4 h-4" />}
-                Prepare Disclosure Request
-              </button>
-              <button
-                onClick={() => prepareIntegration("freeze")}
-                disabled={isPreparingDisclosure || isPreparingFreeze}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
-              >
-                {isPreparingFreeze ? <RefreshCcwIcon className="w-4 h-4 animate-spin" /> : <BotIcon className="w-4 h-4" />}
-                Prepare Freeze Request
+                <XIcon size={18} />
               </button>
             </div>
 
-            {integrationError && (
-              <div className="p-4 rounded-xl bg-[var(--danger-bg)] border border-[var(--danger-border)]">
-                <p className="text-sm font-bold text-[var(--danger-text)] flex items-center gap-2">
-                  <ShieldAlertIcon className="w-4 h-4" /> {integrationError}
+            {/* Scrollable Body: Scrolling works smoothly */}
+            <div className="p-5 overflow-y-auto flex-1 space-y-4 text-xs text-slate-600 overscroll-contain">
+              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-950 leading-relaxed">
+                <p className="font-semibold mb-1">No Regulated Custodial VASP or Exchange Detected:</p>
+                <p>
+                  The traced funds currently terminate at an unhosted private wallet or decentralized protocol (
+                  <code className="font-mono bg-amber-100/80 px-1 py-0.5 rounded text-[11px] font-bold">
+                    {shortAddr(lastHop?.to_address || data.suspect_address, 8, 6)}
+                  </code>
+                  ). Under Section 102 CrPC and Section 106 BNSS, a statutory debit freeze order can only be served upon a regulated custodial reporting entity (FIU-IND registered VASP).
                 </p>
               </div>
-            )}
 
-            {integrationResult && integrationPayload && (
-              <div className="flex flex-col gap-4 border border-[var(--border-color)] rounded-xl p-4 bg-[var(--bg-header)]">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-[var(--text-1)] flex items-center gap-2">
-                      <CheckCircleIcon className="w-4 h-4 text-green-500" /> Integration Payload Ready
-                    </h3>
-                    <p className="text-xs font-medium text-[var(--text-2)] mt-1">{integrationResult.message}</p>
+              <div>
+                <p className="text-xs font-bold text-slate-800 mb-2">Recommended Forensic Next Steps:</p>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-start gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <span className="font-bold text-[#3770FF] text-xs">1.</span>
+                    <div>
+                      <p className="font-bold text-slate-800">Extend Trace Depth (+5 Hops)</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Traverse additional hops to catch money mule peeling chains before exchange off-ramps.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <span className="font-bold text-emerald-600 text-xs">2.</span>
+                    <div>
+                      <p className="font-bold text-slate-800">Initiate Mempool Live Tracking</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Set real-time monitoring on this address to trigger an alert the second funds move to a centralized gateway.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <span className="font-bold text-amber-600 text-xs">3.</span>
+                    <div>
+                      <p className="font-bold text-slate-800">Attach Detailed Case Dossier to FIR</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Generate the Section 65B evidence dossier for the judicial case diary and magistrate submission.</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-widest">Normalized Payload (JSON)</p>
-                  <button onClick={() => copy(JSON.stringify(integrationPayload, null, 2), "payload")}
-                    className="text-[11px] font-bold text-[var(--accent)] hover:underline">
-                    {copied === "payload" ? "COPIED!" : "COPY JSON"}
-                  </button>
-                </div>
-                <pre className="text-[11px] font-mono bg-black/80 text-green-400 p-4 rounded-lg overflow-x-auto border border-black/20 max-h-[300px]">
-                  {JSON.stringify(integrationPayload, null, 2)}
-                </pre>
               </div>
-            )}
+            </div>
+
+            {/* Pinned Action Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-2 shrink-0 flex-wrap">
+              <button
+                onClick={() => {
+                  setShowNoVaspAdvisory(false);
+                  extendTrace();
+                }}
+                disabled={isExtendingTrace}
+                className="px-3.5 py-2 bg-[#3770FF] hover:bg-[#2368FB] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              >
+                <RouteIcon className="w-3.5 h-3.5" />
+                Extend Trace (+5 Hops)
+              </button>
+              <button
+                onClick={() => {
+                  setShowNoVaspAdvisory(false);
+                  viewDossier();
+                }}
+                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              >
+                <FileTextIcon className="w-3.5 h-3.5" />
+                View Case Dossier
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
+      {/* ── Premium In-App PDF Viewer Modal ── */}
+      <PdfViewerModal
+        isOpen={viewerModal.isOpen}
+        onClose={() => setViewerModal((prev) => ({ ...prev, isOpen: false }))}
+        title={viewerModal.title}
+        statuteBadge={viewerModal.statuteBadge}
+        pdfUrl={viewerModal.pdfUrl}
+        fileName={viewerModal.fileName}
+        caseId={data.case_id}
+      />
     </div>
   );
 }

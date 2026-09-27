@@ -43,6 +43,9 @@ class MLServiceHandler(http.server.BaseHTTPRequestHandler):
 
     
     def do_GET(self):
+        if self.path == '/health':
+            self._send_response({"status": "ok", "service": "intelligence-service", "ml_model_loaded": risk_model is not None})
+            return
         if self.path.startswith('/report/'):
             filename = self.path.split('/')[-1]
             filepath = os.path.join(os.path.dirname(__file__), '..', 'reports', filename)
@@ -107,20 +110,32 @@ class MLServiceHandler(http.server.BaseHTTPRequestHandler):
             path = payload.get("path", [])
             ranked_candidates = payload.get("ranked_candidates", [])
             
-            # --- FEATURE EXTRACTION ---
-            temporal_span = 72.0
-            value_continuity = 0.50
-            degree_centrality = len(path) if path else 1
+            # --- FEATURE EXTRACTION USING FeatureExtractor ---
+            raw_hops = payload.get("path", [])
+            hops = [TraceHop(
+                hop_number=i, 
+                from_address=h.get("from_address", ""), 
+                to_address=h.get("to_address", ""), 
+                tx_hash=h.get("tx_hash", ""), 
+                amount=h.get("amount", 0.0), 
+                token_symbol=h.get("token_symbol", "ETH")
+            ) for i, h in enumerate(raw_hops)]
+
+            scorer = RiskScorer()
+            fv = scorer.extractor.extract(suspect_address, chain, hops)
             
-            if len(path) > 1:
-                temporal_span = max(1.0, 72.0 / len(path))
-                value_continuity = 0.95
-                
-            # --- ML PREDICTION ---
+            temporal_span = fv.time_span_hours if fv.time_span_hours > 0 else (72.0 if not hops else 2.0)
+            value_continuity = max(0.0, min(1.0, 1.0 - fv.amount_decay_ratio)) if hops else 0.50
+            degree_centrality = fv.unique_addresses if fv.unique_addresses > 0 else max(1, len(hops))
+            rapid_hop_ratio = fv.rapid_hop_ratio
+            peel_chain_score = fv.peel_chain_score
+            sub_threshold_ratio = fv.sub_threshold_ratio
+
+            # --- ML PREDICTION (6 Features) ---
             overall_risk_score = 0.0
-            risk_level = "Unknown"
+            risk_level = "low"
             if risk_model is not None:
-                features = np.array([[temporal_span, value_continuity, degree_centrality]])
+                features = np.array([[temporal_span, value_continuity, degree_centrality, rapid_hop_ratio, peel_chain_score, sub_threshold_ratio]])
                 proba = risk_model.predict_proba(features)[0]
                 overall_risk_score = float(proba[1]) * 100
                 
@@ -135,16 +150,6 @@ class MLServiceHandler(http.server.BaseHTTPRequestHandler):
                 
             # --- Typology detection ---
             detector = TypologyDetector()
-            raw_hops = payload.get("path", [])
-            hops = [TraceHop(
-                hop_number=i, 
-                from_address=h.get("from_address", ""), 
-                to_address=h.get("to_address", ""), 
-                tx_hash=h.get("tx_hash", ""), 
-                amount=h.get("amount", 0.0), 
-                token_symbol=h.get("token_symbol", "ETH")
-            ) for i, h in enumerate(raw_hops)]
-            
             typologies = detector.detect(hops)
             
             formatted_typs = []

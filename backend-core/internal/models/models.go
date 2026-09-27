@@ -229,6 +229,31 @@ type CaseResult struct {
 	CreatedAt   string `json:"created_at"`
 	CompletedAt string `json:"completed_at,omitempty"`
 	ReportHash  string `json:"report_hash,omitempty"`
+	Graph       *GraphSnapshot `json:"graph,omitempty"`
+}
+
+// GraphNode represents a node in the visual forensic graph.
+type GraphNode struct {
+	ID        string `json:"id"`
+	Label     string `json:"label"`
+	Type      string `json:"type"`
+	IsVASP    bool   `json:"is_vasp"`
+	RiskLevel string `json:"risk_level,omitempty"`
+}
+
+// GraphEdge represents a directed transfer edge between two wallet nodes.
+type GraphEdge struct {
+	Source string  `json:"source"`
+	Target string  `json:"target"`
+	Amount float64 `json:"amount"`
+	Token  string  `json:"token"`
+	TxHash string  `json:"tx_hash"`
+}
+
+// GraphSnapshot encapsulates nodes and edges for instant UI graph hydration.
+type GraphSnapshot struct {
+	Nodes []GraphNode `json:"nodes"`
+	Edges []GraphEdge `json:"edges"`
 }
 
 

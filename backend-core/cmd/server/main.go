@@ -22,7 +22,9 @@ func main() {
 	// Load environment variables from .env file
 	// -----------------------------------------------------------
 	if err := godotenv.Load("../.env"); err != nil {
-		log.Println("[WARN] No .env file found, using system environment variables")
+		if err2 := godotenv.Load(".env"); err2 != nil {
+			log.Println("[WARN] No .env file found, using system environment variables")
+		}
 	}
 
 	// -----------------------------------------------------------
@@ -36,20 +38,13 @@ func main() {
 		log.Println("[OK] PostgreSQL connected")
 	}
 
-	neo4jDriver, err := db.ConnectNeo4j()
-	if err != nil {
-		log.Printf("[WARN] Could not connect to Neo4j: %v. Graph features will be disabled.", err)
-	} else {
-		defer neo4jDriver.Close(context.Background())
-		log.Println("[OK] Neo4j connected")
-	}
-
 	redisClient, err := db.ConnectRedis()
 	if err != nil {
-		log.Fatalf("[FATAL] Could not connect to Redis: %v", err)
+		log.Printf("[WARN] Could not connect to Redis: %v. Cache features will be disabled.", err)
+	} else {
+		defer redisClient.Close()
+		log.Println("[OK] Redis connected")
 	}
-	defer redisClient.Close()
-	log.Println("[OK] Redis connected")
 
 	// -----------------------------------------------------------
 	// Setup Gin HTTP Server
@@ -69,22 +64,35 @@ func main() {
 	// -----------------------------------------------------------
 	// Register all API routes
 	// -----------------------------------------------------------
-	handlers.RegisterRoutes(router, pgPool, neo4jDriver, redisClient)
+	h := handlers.RegisterRoutes(router, pgPool, nil, redisClient)
+
+	// Connect Neo4j asynchronously so HTTP port binds in <50ms
+	go func() {
+		driver, err := db.ConnectNeo4j()
+		if err != nil {
+			log.Printf("[WARN] Neo4j connect: %v (graph features will fallback to PostgreSQL)", err)
+		} else {
+			log.Println("[OK] Neo4j connected")
+			h.SetNeo4j(driver)
+		}
+	}()
 
 	// -----------------------------------------------------------
 	// Start HTTP Server with Graceful Shutdown
 	// -----------------------------------------------------------
-	port := os.Getenv("PORT")`n`tif port == "" {`n`t`tport = os.Getenv("GO_SERVER_PORT")`n`t}
+	port := os.Getenv("GO_SERVER_PORT")
 	if port == "" {
-		port = "8080"
+		port = os.Getenv("PORT")
+	}
+	if port == "" {
+		port = "9090"
 	}
 
 	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 60 * time.Second, // longer for tracing operations
-		IdleTimeout:  120 * time.Second,
+		Addr:        ":" + port,
+		Handler:     router,
+		ReadTimeout: 15 * time.Second,
+		IdleTimeout: 120 * time.Second,
 	}
 
 	// Start server in goroutine

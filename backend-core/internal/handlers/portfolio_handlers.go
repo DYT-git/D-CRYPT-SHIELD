@@ -652,12 +652,199 @@ func fetchCovalentPortfolio(address, chainSlug, apiKey string) (balance, totalIn
 	return
 }
 
+func getDemoPortfolio(address string) *OmniPortfolioResponse {
+	addrLower := strings.ToLower(address)
+	switch addrLower {
+	case strings.ToLower("0x742d35Cc6634C0532925a3b844Bc454e4438f44e"):
+		// Flagship Indian VASP Investigation Case: Cyber Extortion Suspect
+		return &OmniPortfolioResponse{
+			Address:         address,
+			TotalBalanceUSD: 148947.00,
+			TotalBalanceINR: 12511548.00,
+			TotalTxCount:    380,
+			Chains: []ChainPortfolio{
+				{
+					Chain:         "ethereum",
+					TokenSymbol:   "ETH",
+					Balance:       14.25,
+					BalanceUSD:    48450.00,
+					TotalIncoming: 125.40,
+					TotalOutgoing: 111.15,
+					TxCount:       184,
+					FirstSeen:     "2023-04-12",
+					DataAvailable: true,
+				},
+				{
+					Chain:         "tron",
+					TokenSymbol:   "USDT",
+					Balance:       32500.00,
+					BalanceUSD:    32500.00,
+					TotalIncoming: 95000.00,
+					TotalOutgoing: 62500.00,
+					TxCount:       42,
+					FirstSeen:     "2023-08-19",
+					DataAvailable: true,
+				},
+				{
+					Chain:         "bitcoin",
+					TokenSymbol:   "BTC",
+					Balance:       0.85,
+					BalanceUSD:    55250.00,
+					TotalIncoming: 3.40,
+					TotalOutgoing: 2.55,
+					TxCount:       12,
+					FirstSeen:     "2023-06-04",
+					DataAvailable: true,
+				},
+				{
+					Chain:         "bnb",
+					TokenSymbol:   "BNB",
+					Balance:       12.80,
+					BalanceUSD:    7424.00,
+					TotalIncoming: 48.50,
+					TotalOutgoing: 35.70,
+					TxCount:       35,
+					FirstSeen:     "2023-09-01",
+					DataAvailable: true,
+				},
+				{
+					Chain:         "polygon",
+					TokenSymbol:   "POL",
+					Balance:       4120.00,
+					BalanceUSD:    1648.00,
+					TotalIncoming: 18500.00,
+					TotalOutgoing: 14380.00,
+					TxCount:       88,
+					FirstSeen:     "2023-05-15",
+					DataAvailable: true,
+				},
+				{
+					Chain:         "solana",
+					TokenSymbol:   "SOL",
+					Balance:       24.50,
+					BalanceUSD:    3675.00,
+					TotalIncoming: 82.00,
+					TotalOutgoing: 57.50,
+					TxCount:       19,
+					FirstSeen:     "2023-11-20",
+					DataAvailable: true,
+				},
+			},
+		}
+
+	case strings.ToLower("0x098B716B8Aaf215190988513afF39BA65EdAB176"):
+		// Ronin Heist Suspect
+		return &OmniPortfolioResponse{
+			Address:         address,
+			TotalBalanceUSD: 342500.00,
+			TotalBalanceINR: 28770000.00,
+			TotalTxCount:    412,
+			Chains: []ChainPortfolio{
+				{
+					Chain:         "ethereum",
+					TokenSymbol:   "ETH",
+					Balance:       100.00,
+					BalanceUSD:    340000.00,
+					TotalIncoming: 2500.00,
+					TotalOutgoing: 2400.00,
+					TxCount:       230,
+					FirstSeen:     "2022-03-23",
+					DataAvailable: true,
+				},
+				{
+					Chain:         "tron",
+					TokenSymbol:   "USDT",
+					Balance:       2500.00,
+					BalanceUSD:    2500.00,
+					TotalIncoming: 500000.00,
+					TotalOutgoing: 497500.00,
+					TxCount:       182,
+					FirstSeen:     "2022-04-10",
+					DataAvailable: true,
+				},
+			},
+		}
+
+	case strings.ToLower("0x8c7C313Bf280e816a7f9a2D8f1a1A711b7dF46c8"):
+		// UPI Task Scam to Binance Suspect
+		return &OmniPortfolioResponse{
+			Address:         address,
+			TotalBalanceUSD: 45210.00,
+			TotalBalanceINR: 3797640.00,
+			TotalTxCount:    164,
+			Chains: []ChainPortfolio{
+				{
+					Chain:         "ethereum",
+					TokenSymbol:   "USDT",
+					Balance:       45000.00,
+					BalanceUSD:    45000.00,
+					TotalIncoming: 180000.00,
+					TotalOutgoing: 135000.00,
+					TxCount:       98,
+					FirstSeen:     "2024-01-15",
+					DataAvailable: true,
+				},
+				{
+					Chain:         "bnb",
+					TokenSymbol:   "BNB",
+					Balance:       0.35,
+					BalanceUSD:    210.00,
+					TotalIncoming: 15.00,
+					TotalOutgoing: 14.65,
+					TxCount:       66,
+					FirstSeen:     "2024-02-02",
+					DataAvailable: true,
+				},
+			},
+		}
+
+	case strings.ToLower("0x5c43B1eD97e52d009611D89b74fA829FE4ac56b1"):
+		// Safe DeFi Whale Treasury
+		return &OmniPortfolioResponse{
+			Address:         address,
+			TotalBalanceUSD: 850400.00,
+			TotalBalanceINR: 71433600.00,
+			TotalTxCount:    840,
+			Chains: []ChainPortfolio{
+				{
+					Chain:         "ethereum",
+					TokenSymbol:   "ETH",
+					Balance:       250.00,
+					BalanceUSD:    850000.00,
+					TotalIncoming: 1200.00,
+					TotalOutgoing: 950.00,
+					TxCount:       620,
+					FirstSeen:     "2020-09-14",
+					DataAvailable: true,
+				},
+				{
+					Chain:         "polygon",
+					TokenSymbol:   "POL",
+					Balance:       1000.00,
+					BalanceUSD:    400.00,
+					TotalIncoming: 45000.00,
+					TotalOutgoing: 44000.00,
+					TxCount:       220,
+					FirstSeen:     "2021-06-20",
+					DataAvailable: true,
+				},
+			},
+		}
+	}
+	return nil
+}
+
 // ─────────────────────────────────────────────────────────────
 // Main Handler
 // ─────────────────────────────────────────────────────────────
 
 func (h *Handler) GetWalletPortfolio(c *gin.Context) {
 	address := c.Param("address")
+
+	if demo := getDemoPortfolio(address); demo != nil {
+		c.JSON(http.StatusOK, demo)
+		return
+	}
 
 	supportedChains := []string{"ethereum", "bitcoin", "tron", "bnb", "polygon", "solana"}
 	

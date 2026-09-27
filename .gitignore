@@ -38,3 +38,9 @@ junks/
 reports/*
 !reports/.gitkeep
 docs/
+
+# Logs & Temp files
+*.log
+out.txt
+*.out
+test_report.pdf

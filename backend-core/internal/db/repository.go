@@ -30,7 +30,7 @@ func NewRepository(db *sql.DB) *Repository {
 // Preserved for Phase 3 backward compatibility.
 func (r *Repository) LookupVASP(ctx context.Context, address, chain string) (*models.VASPHit, error) {
 	query := `
-		SELECT address, chain, vasp_name, vasp_type, confidence, risk_level, source
+		SELECT address, chain, vasp_name, vasp_type, COALESCE(confidence, 0), COALESCE(risk_level, 'medium'), COALESCE(source, '')
 		FROM vasp_labels
 		WHERE LOWER(address) = LOWER($1) AND LOWER(chain) = LOWER($2)
 		LIMIT 1
@@ -106,7 +106,7 @@ func (r *Repository) LookupEntityAddress(ctx context.Context, address, chain str
 	// ── Fallback: vasp_labels (Phase 3 backward compatibility) ───────────────
 	vl := &models.VASPHit{}
 	fallbackQuery := `
-		SELECT address, chain, vasp_name, vasp_type, confidence, risk_level, source
+		SELECT address, chain, vasp_name, vasp_type, COALESCE(confidence, 0), COALESCE(risk_level, 'medium'), COALESCE(source, '')
 		FROM vasp_labels
 		WHERE LOWER(address) = LOWER($1) AND LOWER(chain) = LOWER($2)
 		LIMIT 1
@@ -193,16 +193,22 @@ func (r *Repository) UpdateCaseStatus(ctx context.Context, caseID, status string
 	return err
 }
 
-// UpdateCaseResult writes the final attribution result to the case record.
-func (r *Repository) UpdateCaseResult(ctx context.Context, caseID string, vaspName string, confidence float64, hops int, rankedCandidates []models.AttributionCandidate) error {
-	var candidatesJSON []byte
-	var err error
-	if rankedCandidates != nil {
-		candidatesJSON, err = json.Marshal(rankedCandidates)
-		if err != nil {
-			log.Printf("[WARN] Failed to marshal ranked_candidates for case %s: %v", caseID, err)
-			candidatesJSON = nil
-		}
+// UpdateCaseResultWithGraph writes the final attribution result AND graph snapshot to the case record.
+func (r *Repository) UpdateCaseResultWithGraph(ctx context.Context, caseID string, vaspName string, confidence float64, hops int, rankedCandidates []models.AttributionCandidate, nodes []models.GraphNode, edges []models.GraphEdge) error {
+	payload := struct {
+		RankedCandidates []models.AttributionCandidate `json:"ranked_candidates"`
+		Nodes            []models.GraphNode            `json:"nodes,omitempty"`
+		Edges            []models.GraphEdge            `json:"edges,omitempty"`
+	}{
+		RankedCandidates: rankedCandidates,
+		Nodes:            nodes,
+		Edges:            edges,
+	}
+
+	candidatesJSON, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("[WARN] Failed to marshal attribution payload for case %s: %v", caseID, err)
+		candidatesJSON = nil
 	}
 
 	query := `
@@ -219,8 +225,16 @@ func (r *Repository) UpdateCaseResult(ctx context.Context, caseID string, vaspNa
 	return err
 }
 
+// UpdateCaseResult writes the final attribution result to the case record.
+func (r *Repository) UpdateCaseResult(ctx context.Context, caseID string, vaspName string, confidence float64, hops int, rankedCandidates []models.AttributionCandidate) error {
+	return r.UpdateCaseResultWithGraph(ctx, caseID, vaspName, confidence, hops, rankedCandidates, nil, nil)
+}
+
 // GetCase retrieves a single case by ID.
 func (r *Repository) GetCase(ctx context.Context, caseID string) (*models.CaseResult, error) {
+	if r == nil || r.db == nil {
+		return nil, fmt.Errorf("database connection not available")
+	}
 	query := `
 		SELECT case_id, suspect_address, chain, status,
 		       COALESCE(result_vasp, ''), COALESCE(confidence, 0),
@@ -257,8 +271,23 @@ func (r *Repository) GetCase(ctx context.Context, caseID string) (*models.CaseRe
 	}
 
 	if len(attrJSON) > 0 {
-		if err := json.Unmarshal(attrJSON, &c.RankedCandidates); err != nil {
-			log.Printf("[WARN] Failed to unmarshal attribution_result for case %s: %v", caseID, err)
+		var payload struct {
+			RankedCandidates []models.AttributionCandidate `json:"ranked_candidates"`
+			Nodes            []models.GraphNode            `json:"nodes"`
+			Edges            []models.GraphEdge            `json:"edges"`
+		}
+		if err := json.Unmarshal(attrJSON, &payload); err == nil && (len(payload.RankedCandidates) > 0 || len(payload.Nodes) > 0) {
+			c.RankedCandidates = payload.RankedCandidates
+			if len(payload.Nodes) > 0 || len(payload.Edges) > 0 {
+				c.Graph = &models.GraphSnapshot{
+					Nodes: payload.Nodes,
+					Edges: payload.Edges,
+				}
+			}
+		} else {
+			if err := json.Unmarshal(attrJSON, &c.RankedCandidates); err != nil {
+				log.Printf("[WARN] Failed to unmarshal attribution_result for case %s: %v", caseID, err)
+			}
 		}
 	}
 

@@ -1,0 +1,179 @@
+================================================================================
+D-CRYPT SHIELD — EXACT ELEVENLABS VOICEOVER SCRIPT (BASED ON OFFICIAL SCRIPT)
+================================================================================
+ELEVENLABS RECOMMENDED SETTINGS:
+- Voice: "Brian" (Deep, authoritative tech narrator) or "Adam"
+- Stability: 55%
+- Clarity + Similarity: 80%
+- Style Exaggeration: 10%
+================================================================================
+
+
+--------------------------------------------------------------------------------
+SCENE 1: DASHBOARD & SAHYOG AUTHENTICATION
+(Save audio as: Scene1_Dashboard.mp3)
+--------------------------------------------------------------------------------
+Hello respected judges. Welcome to the D-Crypt Shield forensic command center.
+
+When an investigating officer logs in through the Sahyog integration portal, this is their central intelligence dashboard. Right away, officers get a bird’s-eye view of all active cyber operations... including total wallets investigated, K-Y-C bound Virtual Asset Service Providers identified, cases successfully completed, and seized asset metrics across all chains.
+
+Now, let’s move directly to our core investigation engine: the Trace Wallet engine.
+
+
+--------------------------------------------------------------------------------
+SCENE 2: TRACE WALLET ENGINE — DUAL INGESTION MODES
+(Save audio as: Scene2_Trace_Ingestion.mp3)
+--------------------------------------------------------------------------------
+Our tracing engine is built on two primary investigation pillars, designed to handle real-world cybercrime complaints.
+
+Pillar 1: Scam Transaction Hash Ingestion.
+In most cyber complaints, a victim only has a payment transaction hash from their bank or crypto receipt. When an officer inputs a scam transaction hash, our engine immediately resolves the on-chain block data. It extracts the timestamp, block height, sender address, receiver address, suspect destination, and the exact stolen amount.
+
+For example, in this video demonstration, we have pre-configured official forensic test vectors. When I select this Ransomware Transfer hash, you can see the sender, receiver, suspect address, and exact scammed amount instantly fetched directly from the block.
+
+We support all major high-risk blockchains: Ethereum, Bitcoin, Tron, B-N-B Chain, Polygon, Solana, Arbitrum, and Avalanche.
+
+Pillar 2: Direct Suspect Wallet Ingestion.
+Now let’s switch to the second option... the direct wallet address input, exactly as requested in the Problem Statement. When law enforcement already has the scammer's unhosted wallet address, they can input it directly to trace the entire layering trail.
+
+
+--------------------------------------------------------------------------------
+SCENE 3: FORENSIC TUNING & OMNI-CHAIN INTELLIGENCE
+(Save audio as: Scene3_Portfolio_Tuning.mp3)
+--------------------------------------------------------------------------------
+To demonstrate our engine in action, we have loaded representative forensic scenarios. Here, I am selecting the Coin-D-C-X Gateway Extortion case on the Ethereum blockchain, Case 2024-IN-0891. The officer can input the Case Number, Investigating Officer Name, and Police Station.
+
+Notice these critical forensic tuning controls:
+Number 1: Max Search Depth... Allows investigators to traverse up to 10 plus hops deep across intermediate mule wallets.
+Number 2: Branches per Hop... Controls the radial B-F-S expansion so the graph doesn't explode with irrelevant addresses.
+Number 3: Flow Direction... In scam and ransomware cases, criminals primarily layer funds outward, so we select Outgoing fund flow to trace the laundering path.
+Number 4: Minimum Transfer Value... Automatically ignores dusting attacks and micro-transactions below a threshold so officers focus strictly on the stolen principal.
+
+Next, observe the Trace Priority Queue:
+Officers can designate the operational urgency:
+Normal... for standard queue processing,
+High... for accelerated priority tracing,
+and Critical... for immediate dispatch mode during high-stakes emergency ransomware and extortion cases where immediate action is required before criminals cash out.
+
+In addition, our system initiates Omni-Chain Portfolio Fetching to aggregate wallet activity across chains.
+
+Now, let’s start tracing. As deep multi-hop graph traversal across on-chain blocks takes a few minutes to be done, we will continue as it finishes in the background.
+
+
+--------------------------------------------------------------------------------
+SCENE 4: VASP ATTRIBUTION & AI RISK INTELLIGENCE
+(Save audio as: Scene4_Attribution_Risk.mp3)
+--------------------------------------------------------------------------------
+So, our system has successfully fetched the data for the omni-chain portfolio.
+
+Right at the top, officers can see the suspect's aggregated funds in both U-S Dollars and Indian Rupees across six major blockchains. Here, they can inspect global transactions, and by clicking Show Chain Details, they can see the total balance, asset distribution, and all transactions done.
+
+Moving to our completed attribution results: our B-F-S graph engine pinpoints the nearest centralized exchange off-ramp in the V-A-S-P Attribution card.
+
+For this suspect wallet, our engine traced through the multi-hop layering and identified that the stolen funds terminated at Coin-D-C-X India... an F-I-U India registered Virtual Digital Asset service provider. Our system calculated a 99.4% Attribution Confidence Score, indicating deterministic mathematical proof that this cluster belongs to Coin-D-C-X’s deposit gateway.
+
+Below that is our Risk Intelligence Engine. Our machine-learning models evaluate the fund trail against standard financial crime typologies:
+Immediate C-E-X Off-Ramp...
+Mule Structuring and Smurfing...
+and Peel Chain Layering.
+
+Here is why our model flagged this case with an 89.2 High Risk Score:
+Extortion proceeds of 14.25 Ethereum... approximately 32 lakh 80 thousand rupees... were structured across 3 mule hops within just 18 minutes.
+Rapid Transit Profile: Near-zero holding time at intermediary wallets... funds were forwarded within 300 seconds of receipt, indicating automated laundering scripts.
+And Terminal Hop: Terminated directly at the Coin-D-C-X K-Y-C bound gateway.
+
+
+--------------------------------------------------------------------------------
+SCENE 5: THE INTERACTIVE SHADOW GRAPH (DETAILED VISUAL BREAKDOWN)
+(Save audio as: Scene5_Shadow_Graph.mp3)
+--------------------------------------------------------------------------------
+Now let us examine our most powerful visual feature: the Interactive Shadow Graph for Case 2024-IN-0891.
+
+As you can see on screen, our engine has mapped 10 interconnected Nodes and 10 on-chain Transactions, revealing the complete laundering topology from initial theft to final off-ramps:
+
+1. Suspect Origin:
+This pulsing red node represents the criminal's root unhosted wallet where the victim's 14.25 Ethereum originally landed.
+
+2. Asymmetric Splitting and Layering:
+To evade basic heuristic alerts, the criminal immediately bifurcated the stolen funds into two separate branches:
+Upper Path: 10.5 Ethereum transferred to Mule A.
+Lower Path: 3.75 Ethereum routed downward to Splitter.
+
+3. Gas Relaying and Bot Infrastructure:
+Notice this small intermediate node: Mule A peeled off 0.15 Ethereum to a designated Gas Relayer burner wallet, specifically used to pay execution gas fees for automated relay bots without contaminating their main balance.
+
+4. Transit Layering and Re-Convergence:
+Simultaneously, the lower branch routed 3.72 Ethereum through Transit. Both the upper branch and lower branch re-converge into the Peel Hub. This is a classic laundering tactic designed to mislead traditional blockchain explorers.
+
+5. Aggregation:
+At the Peel Hub, the funds re-accumulate into 14.12 Ethereum and flow directly into the glowing center Aggregator node.
+
+6. The Dual-Terminal Off-Ramp:
+From the Aggregator, the syndicate executes their final cashing-out strategy across two distinct destinations:
+Terminal Destination 1, Coin-D-C-X India: 12.1 Ethereum flows directly into the verified Coin-D-C-X India F-I-U India gateway. This is a K-Y-C bound domestic exchange.
+Terminal Destination 2, Decentralized Swap to Stablecoin: 2 Ethereum is routed through 1inch Swap Protocol, converting the volatile Ethereum into 6,800 U-S-D-T stablecoins before being funneled into the Wazir-X Binance Hub.
+
+Interactive Graph Controls:
+On the right, officers can zoom in or out, click Fit to View to center the network, or click the Target Reticle to automatically snap directly to the K-Y-C bound exchange nodes.
+
+In the top-left corner, officers can click Export P-N-G to instantly download this high-resolution, court-admissible diagram for their official charge sheet.
+
+
+--------------------------------------------------------------------------------
+SCENE 6: FORENSIC HOP TRAIL & STATUTORY CRPC FREEZING REQUISITION
+(Save audio as: Scene6_Legal_Requisitions.mp3)
+--------------------------------------------------------------------------------
+Looking at the Analytics Performance, in just 4 hops our engine scanned 268 candidate wallets. With our smart dust filter enabled, noisy micro-transactions were automatically pruned, isolating the exact criminal laundering path.
+
+Below, the Forensic Hop Trail provides a chronological, step-by-step evidence ledger showing every intermediate transaction hash, token amount, and timestamp.
+
+Now, what is the ultimate goal for law enforcement? Freezing the funds before the criminal cashes out to fiat.
+
+Right here from the investigation page, the officer clicks... Generate Section 91 and 102 C-R-P-C Requisition.
+
+Look at what our system generates in seconds:
+First: An official, court-admissible Notice under Section 91 C-R-P-C addressed directly to the Coin-D-C-X Designated Nodal Compliance Officer.
+Second: A statutory freeze requisition under Section 102 C-R-P-C instructing the exchange to freeze the beneficiary account, K-Y-C records, I-P logs, and linked bank accounts.
+Third: Each requisition carries a unique S-H-A 256 cryptographic report hash and a verifiable Q-R code. Anyone... including the exchange compliance desk or a court magistrate... can scan this Q-R code to verify its authenticity on the Sahyog portal or our public verification gateway.
+
+In addition, officers can export the comprehensive Section 65-B Indian Evidence Act Forensic Dossier with a single click.
+
+
+--------------------------------------------------------------------------------
+SCENE 7: REAL-TIME LIVE ON-CHAIN TRACKING & O-K-X WALLET DEMONSTRATION
+(Save audio as: Scene7_Live_Tracker_OKX.mp3)
+--------------------------------------------------------------------------------
+Our tracing engine works brilliantly when funds have already reached an exchange. But what if a scammer is currently holding the funds in an unhosted cold wallet and waiting days or weeks before moving them?
+
+To solve this, we built the Real-Time Live Tracking Engine.
+
+Let us demonstrate this live right now using a real Web3 wallet to show you this capability in action.
+
+Here is my O-K-X Wallet. As you can see, I select the Ethereum token and copy my public wallet address. Now, let's paste it right here into our target monitor, select the Ethereum network, and enter my personal investigator email address to receive instant alerts.
+
+Next, I click... Deploy Real-Time Tracker.
+
+Our Go-based background daemon immediately connects to the blockchain R-P-C and begins monitoring pending and mined blocks specifically for this address.
+
+Now, let's execute a real transaction to another wallet. Inside O-K-X Wallet, I click Send, select my secondary wallet address, enter a test amount of 0.20 dollars in Ethereum, and click Confirm.
+
+It will take just a few seconds for the block to confirm.
+
+As soon as the transaction is confirmed on-chain... look at our terminal and live feed! Our engine intercepts the event in real time. You can verify the transaction hash, the sender, the receiver, and the exact amount right here on screen.
+
+Finally, let us open our email inbox to verify the alert. As you can see, the investigating officer receives a high-priority tactical alert containing the sender, receiver, transaction hash, and asset amount, along with full block metadata and a direct link to the updated forensic case.
+
+
+--------------------------------------------------------------------------------
+SCENE 8: FIU-IND VASP REGISTRY & CONCLUSION
+(Save audio as: Scene8_Conclusion.mp3)
+--------------------------------------------------------------------------------
+Finally, all of this is powered by our comprehensive F-I-U India registered V-A-S-P Directory.
+
+We have mapped thousands of verified exchange hot wallets, cold reserves, and compliance nodal officer contacts across domestic and international exchanges... including Coin-D-C-X, Wazir-X, CoinSwitch, Binance, and Kraken. Our automated O-S-I-N-T ingestion worker continuously enriches this dataset with new exchange clusters daily.
+
+To summarize:
+D-Crypt Shield transforms what used to take cyber crime cells several weeks of manual blockchain exploration into an automated, thirty-second forensic workflow... from victim transaction hash, through multi-hop layering, to instant K-Y-C attribution, interactive visual graphs, statutory freezing notices, and 24/7 autonomous wallet surveillance.
+
+Thank you, judges. We are now ready for your questions.
+================================================================================

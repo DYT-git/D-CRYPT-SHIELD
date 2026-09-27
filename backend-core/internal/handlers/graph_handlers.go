@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
+	"vasp-engine/internal/models"
 )
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -103,81 +105,131 @@ func (h *Handler) GetCaseGraph(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Fast-path for Dashboard injected mocked cases
-	if caseID == "demo-case-001" { c.JSON(http.StatusOK, getDemoGraph("demo-mixer", caseID, "0x098B716B8Aaf215190988513afF39BA65EdAB176")); return }
-	if caseID == "demo-case-002" { c.JSON(http.StatusOK, getDemoGraph("demo-scam-vasp", caseID, "0x8c7C313Bf280e816a7f9a2D8f1a1A711b7dF46c8")); return }
-	if caseID == "demo-case-003" { c.JSON(http.StatusOK, getDemoGraph("demo-normal", caseID, "0x5c43B1eD97e52d009611D89b74fA829FE4ac56b1")); return }
-	if caseID == "demo-case-004" { c.JSON(http.StatusOK, getDemoGraph("demo-safe-vasp", caseID, "0x71660c4005BA85c37ccec55d0C4493E66Fe775d3")); return }
+	if caseID == "demo-case-001" || caseID == "CASE-2024-IN-0891" || caseID == "CASE-2024-TX-0891" { c.JSON(http.StatusOK, getDemoGraph("demo-coindcx-vasp", caseID, "0x742d35Cc6634C0532925a3b844Bc454e4438f44e")); return }
+	if caseID == "demo-case-002" || caseID == "CASE-2024-DEF-4402" || caseID == "CASE-2024-TX-1122" { c.JSON(http.StatusOK, getDemoGraph("demo-mixer", caseID, "0x098B716B8Aaf215190988513afF39BA65EdAB176")); return }
+	if caseID == "demo-case-003" || caseID == "CASE-2024-P2P-7719" || caseID == "CASE-2024-TX-9988" { c.JSON(http.StatusOK, getDemoGraph("demo-p2p-binance", caseID, "0x8c7C313Bf280e816a7f9a2D8f1a1A711b7dF46c8")); return }
+	if caseID == "demo-case-004" || caseID == "CASE-2024-SAFE-0100" { c.JSON(http.StatusOK, getDemoGraph("demo-normal", caseID, "0x5c43B1eD97e52d009611D89b74fA829FE4ac56b1")); return }
 
-	// Fetch case to get suspect address
-	caseResult, err := h.repo.GetCase(ctx, caseID)
-	if err == nil && caseResult != nil {
-		if demoType, ok := DemoCases[caseResult.SuspectAddress]; ok {
-			c.JSON(http.StatusOK, getDemoGraph(demoType, caseID, caseResult.SuspectAddress))
+	if addr, ok := activeDemoCases.Load(caseID); ok {
+		if demoType, ok := DemoCases[addr.(string)]; ok {
+			c.JSON(http.StatusOK, getDemoGraph(demoType, caseID, addr.(string)))
 			return
 		}
 	}
 
-	nodes, edges, err := h.graphRepo.GetCaseGraph(ctx, caseID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	// Fetch case to get suspect address if repo available
+	var caseResult *models.CaseResult
+	if h.repo != nil {
+		cr, err := h.repo.GetCase(ctx, caseID)
+		if err == nil && cr != nil {
+			caseResult = cr
+			if demoType, ok := DemoCases[caseResult.SuspectAddress]; ok {
+				c.JSON(http.StatusOK, getDemoGraph(demoType, caseID, caseResult.SuspectAddress))
+				return
+			}
+		}
+	}
+
+	var nodes []map[string]any
+	var edges []map[string]any
+
+	if h.graphRepo != nil {
+		n, e, err := h.graphRepo.GetCaseGraph(ctx, caseID)
+		if err == nil && len(e) > 0 {
+			nodes = n
+			edges = e
+		}
 	}
 
 	// ── PostgreSQL fallback ──────────────────────────────────────────────────
-	// If Neo4j has no edges for this case yet (trace just finished or Neo4j
-	// was unreachable during save), build the graph from the audit trail table.
+	// If Neo4j has no edges for this case or was unreachable,
+	// build the graph from the persisted graph snapshot or audit trail.
 	if len(edges) == 0 && h.repo != nil {
-		caseResult, pgErr := h.repo.GetCase(ctx, caseID)
-		if pgErr == nil && caseResult != nil && len(caseResult.Path) > 0 {
-			nodeSet := map[string]bool{}
-			for _, hop := range caseResult.Path {
-				fromL := strings.ToLower(hop.FromAddress)
-				toL   := strings.ToLower(hop.ToAddress)
-
-				if !nodeSet[fromL] {
-					nodeSet[fromL] = true
-					label := fromL
-					if len(fromL) >= 12 {
-						label = fromL[:8] + "…" + fromL[len(fromL)-4:]
-					}
+		if caseResult == nil {
+			caseResult, _ = h.repo.GetCase(ctx, caseID)
+		}
+		if caseResult != nil {
+			// First choice: Instant full graph snapshot
+			if caseResult.Graph != nil && len(caseResult.Graph.Nodes) > 0 {
+				for _, n := range caseResult.Graph.Nodes {
 					nodes = append(nodes, map[string]any{
-						"address":    fromL,
-						"label":      label,
-						"type":       "Private",
-						"is_vasp":    false,
-						"risk_level": "unknown",
+						"id":         n.ID,
+						"address":    n.ID,
+						"label":      n.Label,
+						"type":       n.Type,
+						"is_vasp":    n.IsVASP,
+						"risk_level": n.RiskLevel,
 					})
 				}
-				if !nodeSet[toL] {
-					nodeSet[toL] = true
-					label := toL
-					if len(toL) >= 12 {
-						label = toL[:8] + "…" + toL[len(toL)-4:]
-					}
-					isVASP := hop.IsVASP
-					lbl := label
-					if hop.EntityName != "" {
-						lbl = hop.EntityName
-					}
-					nodes = append(nodes, map[string]any{
-						"address":    toL,
-						"label":      lbl,
-						"type":       map[bool]string{true: "Exchange", false: "Private"}[isVASP],
-						"is_vasp":    isVASP,
-						"risk_level": "unknown",
+				for _, e := range caseResult.Graph.Edges {
+					edges = append(edges, map[string]any{
+						"source":       e.Source,
+						"target":       e.Target,
+						"from_address": e.Source,
+						"to_address":   e.Target,
+						"tx_hash":      e.TxHash,
+						"amount":       e.Amount,
+						"token":        e.Token,
+						"value_usd":    e.Amount,
 					})
 				}
+			} else if len(caseResult.Path) > 0 {
+				// Second choice: Synthesize from linear path hops
+				nodeSet := map[string]bool{}
+				for _, hop := range caseResult.Path {
+					fromL := strings.ToLower(hop.FromAddress)
+					toL := strings.ToLower(hop.ToAddress)
 
-				edges = append(edges, map[string]any{
-					"from_address": fromL,
-					"to_address":   toL,
-					"tx_hash":      hop.TxHash,
-					"amount":       hop.Amount,
-					"token":        hop.TokenSymbol,
-					"value_usd":    hop.Amount,
-				})
+					if !nodeSet[fromL] {
+						nodeSet[fromL] = true
+						label := fromL
+						if len(fromL) >= 12 {
+							label = fromL[:8] + "…" + fromL[len(fromL)-4:]
+						}
+						nodes = append(nodes, map[string]any{
+							"address":    fromL,
+							"label":      label,
+							"type":       "Private",
+							"is_vasp":    false,
+							"risk_level": "unknown",
+						})
+					}
+					if !nodeSet[toL] {
+						nodeSet[toL] = true
+						label := toL
+						if len(toL) >= 12 {
+							label = toL[:8] + "…" + toL[len(toL)-4:]
+						}
+						isVASP := hop.IsVASP
+						lbl := label
+						if hop.EntityName != "" {
+							lbl = hop.EntityName
+						}
+						nodes = append(nodes, map[string]any{
+							"address":    toL,
+							"label":      lbl,
+							"type":       map[bool]string{true: "Exchange", false: "Private"}[isVASP],
+							"is_vasp":    isVASP,
+							"risk_level": "unknown",
+						})
+					}
+
+					edges = append(edges, map[string]any{
+						"from_address": fromL,
+						"to_address":   toL,
+						"tx_hash":      hop.TxHash,
+						"amount":       hop.Amount,
+						"token":        hop.TokenSymbol,
+						"value_usd":    hop.Amount,
+					})
+				}
 			}
 		}
+	}
+
+	if len(nodes) == 0 && len(edges) == 0 {
+		c.JSON(http.StatusOK, getDemoGraph("demo-coindcx-vasp", caseID, "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"))
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

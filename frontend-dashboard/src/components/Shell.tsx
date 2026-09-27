@@ -1,10 +1,24 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import Sidebar from "./Sidebar";
-import { MenuIcon, XIcon, ShieldIcon } from "./Icons";
+import { MenuIcon, XIcon } from "./Icons";
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const role = localStorage.getItem("userRole");
+    if (!role && pathname !== "/" && pathname !== "/login") {
+      router.push("/");
+    }
+  }, [pathname, router]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -16,54 +30,57 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  if (!isMounted) return null; // Prevent hydration mismatch
+
+  if (pathname === "/login" || pathname === "/") {
+    return <main className="font-sans min-h-screen">{children}</main>;
+  }
+
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden font-sans selection:bg-blue-100">
+    <div className="flex h-screen bg-transparent text-[#13123A] overflow-hidden font-sans selection:bg-[#3770FF]/20">
       
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block h-full shrink-0">
+      {/* ── Desktop Side Navigation ── */}
+      <div className="hidden md:block h-full shrink-0 z-20">
         <Sidebar />
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* ── Main Canvas Content Area ── */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         
-        {/* Mobile Topbar */}
-        <div className="md:hidden bg-white flex items-center justify-between p-4 border-b border-slate-200">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-              <ShieldIcon size={16} className="text-white" />
-            </div>
-            <span className="text-base font-black text-slate-900 tracking-tight">D-CRYPT Tracer</span>
-          </div>
-          <button 
+        {/* Mobile Top Header */}
+        <div className="md:hidden bg-white flex items-center justify-between px-5 py-4 border-b border-[#ECF1F2] shrink-0">
+          <Link href="/" className="flex items-center">
+            <span className="text-[17px] font-black tracking-[-0.02em] text-[#0F172A] uppercase font-eyebrow flex items-center gap-1.5 leading-none">
+              D-CRYPT <span className="text-[#2563EB]">SHIELD</span>
+            </span>
+          </Link>
+          <button
             onClick={() => setMobileMenuOpen(true)}
-            className="p-1 text-slate-500 hover:text-slate-900 transition-colors"
+            className="p-1.5 rounded-lg text-[#616B70] hover:text-[#273339] hover:bg-[#F6F8F7] transition-colors"
           >
             <MenuIcon size={20} />
           </button>
         </div>
 
-        {/* Scrollable Area */}
-        <main className="flex-1 overflow-y-auto relative scroll-smooth">
-          <div className="p-6 md:p-10 max-w-[1400px] mx-auto w-full">
-            {children}
-          </div>
+        {/* Scrollable Main Window */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-5 md:p-8 lg:p-10 max-w-[1500px] w-full mx-auto scroll-smooth">
+          {children}
         </main>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* ── Mobile Drawer ── */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
-          <div 
-            className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" 
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="relative w-72 bg-white h-full shadow-2xl flex flex-col">
-            <button 
+          <div className="relative w-64 bg-white h-full shadow-2xl flex flex-col z-10 animate-fade-in">
+            <button
               onClick={() => setMobileMenuOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-900 transition-colors z-50"
+              className="absolute top-4 right-4 text-[#90999E] hover:text-[#273339] p-1.5 rounded-lg transition-colors z-20"
             >
-              <XIcon size={20} />
+              <XIcon size={18} />
             </button>
             <Sidebar />
           </div>

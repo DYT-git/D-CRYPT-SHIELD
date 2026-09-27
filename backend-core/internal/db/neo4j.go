@@ -3,7 +3,10 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
@@ -11,7 +14,8 @@ import (
 // ConnectNeo4j creates and returns a Neo4j driver instance.
 // The driver manages a connection pool internally.
 func ConnectNeo4j() (neo4j.DriverWithContext, error) {
-	uri := getEnv("NEO4J_URI", "bolt://localhost:7687")
+	uri := getEnv("NEO4J_URI", "bolt://127.0.0.1:7687")
+	uri = strings.ReplaceAll(uri, "localhost", "127.0.0.1")
 	user := getEnv("NEO4J_USER", "neo4j")
 	password := getEnv("NEO4J_PASSWORD", "vaspengine123")
 
@@ -23,17 +27,23 @@ func ConnectNeo4j() (neo4j.DriverWithContext, error) {
 		return nil, fmt.Errorf("failed to create neo4j driver: %w", err)
 	}
 
-	// Verify connectivity
-	ctx := context.Background()
+	// Verify connectivity with 2s timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 	if err := driver.VerifyConnectivity(ctx); err != nil {
 		return nil, fmt.Errorf("failed to verify neo4j connectivity: %w", err)
 	}
 
-	// Create constraints for uniqueness on wallet addresses
-	if err := setupNeo4jConstraints(ctx, driver); err != nil {
-		// Non-fatal — constraints may already exist
-		fmt.Fprintf(os.Stderr, "[WARN] Neo4j constraints setup: %v\n", err)
-	}
+	// Create constraints asynchronously with timeout so server startup is non-blocking
+	go func() {
+		bgCtx, bgCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer bgCancel()
+		if err := setupNeo4jConstraints(bgCtx, driver); err != nil {
+			fmt.Fprintf(os.Stderr, "[WARN] Neo4j constraints setup: %v\n", err)
+		} else {
+			log.Println("[OK] Neo4j constraints verified")
+		}
+	}()
 
 	return driver, nil
 }

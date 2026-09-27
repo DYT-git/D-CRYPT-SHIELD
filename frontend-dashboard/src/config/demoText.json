@@ -1,0 +1,72 @@
+{
+  "dashboard_main": {
+    "layout": "fullscreen",
+    "title": "D-CRYPT SHIELD — Core Engine",
+    "text": "What you see here is the core working engine of D-CRYPT SHIELD. For API integration details, partner onboarding, and the full public portal — please refer to our landing page.\n\nToday, we are focusing entirely on how the investigation engine works end-to-end."
+  },
+  "dashboard_cases": {
+    "layout": "copilot",
+    "title": "Investigation Operations Center",
+    "text": "This is the central hub for law enforcement officers. From here, investigators can view all active and completed cases, monitor live trace statuses, check risk scores, and directly open individual case intelligence reports — everything in one place."
+  },
+  "trace_tx_hash": {
+    "layout": "copilot",
+    "title": "Direct Transaction Hash Ingestion",
+    "text": "Officers can paste a scam transaction hash directly here. The system automatically extracts the suspect wallet address, transaction amount, date, and blockchain — so the investigator requires no prior blockchain knowledge to begin a trace."
+  },
+  "trace_input": {
+    "layout": "copilot",
+    "title": "Suspect Wallet Entry",
+    "text": "The suspect wallet address is entered here. In production, this is automatically populated from the SAHYOG portal the moment a complaint is registered.\n\nFor this demonstration, we are manually entering a few real scam wallets we collected specifically to test and showcase the engine."
+  },
+  "trace_config": {
+    "layout": "copilot",
+    "title": "Omni-Chain Tracing",
+    "text": "D-CRYPT SHIELD traces funds across multiple blockchains. We currently support 6 major chains — Ethereum, Bitcoin, Tron, BNB Chain, Polygon, and Solana — with more being added.\n\nFor this demonstration, we are selecting Ethereum."
+  },
+  "case_graph": {
+    "layout": "copilot",
+    "title": "Fund Flow Shadow Graph",
+    "text": "This graph maps the exact path funds travelled — from the suspect wallet, through intermediary wallets, all the way to the receiving exchange or VASP.\n\nWe automatically filter out micro-transactions and dust activity to keep the graph forensically clean and easy to read. Use the controls inside to zoom, pan, freeze the layout, or lock the graph to scroll the page freely."
+  },
+  "case_risk": {
+    "layout": "copilot",
+    "title": "AI Risk Intelligence Score",
+    "text": "Our system automatically assigns every wallet a risk score from 0 to 100. It analyses transaction behaviour, mixing patterns, counterparty exposure, and known blacklists to determine the likelihood that this wallet is involved in criminal activity — no manual analysis required."
+  },
+  "case_vasp_attribution": {
+    "layout": "copilot",
+    "title": "Automated VASP Attribution Engine",
+    "text": "This is the core of D-CRYPT SHIELD. The attribution engine identifies whether the suspect funds reached a regulated exchange, and if so — returns the exchange name, jurisdiction, and a confidence percentage.\n\nThis result directly determines which VASP receives the statutory freeze order."
+  },
+  "case_evidence": {
+    "layout": "copilot",
+    "title": "Statutory Evidence Generation",
+    "text": "Once a regulated exchange is identified, the system acts instantly. It automatically generates a court-admissible Case Dossier and Statutory Freeze Order compliant with Section 65B of the Indian Evidence Act and Section 106 of the BNSS.\n\nDocuments are embedded with a tamper-evident SHA-256 seal — ready for immediate magistrate submission and FIR attachment."
+  },
+  "case_novasp": {
+    "layout": "copilot",
+    "title": "Unhosted Wallet — No VASP Found",
+    "text": "If the funds have not yet reached a centralized exchange, the system intelligently adapts. It issues an Unhosted Wallet advisory, explaining that a freeze order cannot legally be served to a decentralized protocol.\n\nIt immediately recommends switching to Real-Time Mempool Tracking to catch the movement the moment the suspect tries to cash out."
+  },
+  "case_trace_path": {
+    "layout": "copilot",
+    "title": "Forensic Hop Trail",
+    "text": "Below the graph, officers can view the complete transaction trail in a structured, readable format — every wallet hop, amount transferred, and timestamp.\n\nThis is formatted to be directly attached to court submissions, FIRs, and SAHYOG disclosure requests."
+  },
+  "live_tracking": {
+    "layout": "copilot",
+    "title": "Real-Time Mempool Interception",
+    "text": "This module monitors suspect wallets 24/7 on the blockchain mempool. The moment a transaction is broadcast — even before it is confirmed on the network — our system detects it and instantly alerts the investigating officer.\n\nOfficers can register their email here to receive live push notifications. For this demonstration, we will use a real wallet transaction to show the system detecting and alerting in real time."
+  },
+  "live_target": {
+    "layout": "copilot",
+    "title": "Target Wallet Registration",
+    "text": "Enter the suspect wallet address here to begin monitoring. Once registered, our WebSocket engine connects to the live blockchain mempool and watches every incoming and outgoing transaction from this wallet in real time."
+  },
+  "vasp_db": {
+    "layout": "copilot",
+    "title": "FIU-IND VASP Registry",
+    "text": "D-CRYPT SHIELD maintains a live, synchronized database of all FIU-IND registered Virtual Asset Service Providers. This ensures that whenever our engine traces funds to an exchange, we already have the verified legal entity name, nodal officer contact, and jurisdiction details required to immediately auto-dispatch the freeze order."
+  }
+}

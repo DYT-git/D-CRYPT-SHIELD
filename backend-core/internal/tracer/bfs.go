@@ -75,6 +75,11 @@ func (e *Engine) SetRepo(repo EntityLookup) {
 	e.repo = repo
 }
 
+// SetNeo4j updates the Neo4j driver on the engine after async connection.
+func (e *Engine) SetNeo4j(driver neo4j.DriverWithContext) {
+	e.neo4j = driver
+}
+
 
 // TraceResult holds the final output of a BFS trace operation.
 type TraceResult struct {
@@ -94,20 +99,8 @@ type TraceResult struct {
 	Duration       time.Duration                  `json:"duration_ms"`
 }
 
-type GraphNode struct {
-	ID     string `json:"id"`
-	Label  string `json:"label"`
-	Type   string `json:"type"`
-	IsVASP bool   `json:"is_vasp"`
-}
-
-type GraphEdge struct {
-	Source string  `json:"source"`
-	Target string  `json:"target"`
-	Amount float64 `json:"amount"`
-	Token  string  `json:"token"`
-	TxHash string  `json:"tx_hash"`
-}
+type GraphNode = models.GraphNode
+type GraphEdge = models.GraphEdge
 
 // Trace performs a BFS traversal starting from the suspect address.
 // It fans out checking each destination against the entity/VASP label database.
@@ -432,23 +425,27 @@ func (e *Engine) checkVASPLabel(ctx context.Context, address, chain string) (*mo
 	cacheKey := fmt.Sprintf("vasp:%s:%s", chain, address)
 
 	// 1. Check Redis cache (sub-millisecond)
-	cached, err := e.redis.Get(ctx, cacheKey).Result()
-	if err == nil && cached != "" {
-		if cached == "null" {
-			return nil, nil // Cached miss — not a VASP
+	if e.redis != nil {
+		cached, err := e.redis.Get(ctx, cacheKey).Result()
+		if err == nil && cached != "" {
+			if cached == "null" {
+				return nil, nil // Cached miss — not a VASP
+			}
+			hit := &models.VASPHit{}
+			fmt.Sscanf(cached, "%s|%s|%f", &hit.VASPName, &hit.VASPType, &hit.Confidence)
+			hit.Address = address
+			hit.Chain = chain
+			return hit, nil
 		}
-		hit := &models.VASPHit{}
-		fmt.Sscanf(cached, "%s|%s|%f", &hit.VASPName, &hit.VASPType, &hit.Confidence)
-		hit.Address = address
-		hit.Chain = chain
-		return hit, nil
 	}
 
 	// 2. Cache miss — query PostgreSQL vasp_labels table.
 	// Full Postgres wiring is done via the Repository layer in the handler.
 	// The engine receives VASP results through the checkVASP callback after fetch.
 	// Cache the miss for 30 minutes to avoid redundant DB hits per address.
-	e.redis.Set(ctx, cacheKey, "null", 30*time.Minute)
+	if e.redis != nil {
+		e.redis.Set(ctx, cacheKey, "null", 30*time.Minute)
+	}
 
 	return nil, nil
 }

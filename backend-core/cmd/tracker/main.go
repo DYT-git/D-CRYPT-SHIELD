@@ -205,14 +205,20 @@ func fetchAndScanBlock(chain, httpURL, blockHex string) {
 					valInt.SetString(strings.Replace(tx.Value, "0x", "", 1), 16)
 					amount := new(big.Float).Quo(new(big.Float).SetInt(valInt), big.NewFloat(1e18))
 
-					msg := fmt.Sprintf("REAL EVIDENCE SECURED: [%s] %s transfer of %.5f native asset in Block %s on %s. Real TxHash: %s", 
-						targetAddr[:8]+"...", direction, amount, blockNum.String(), strings.ToUpper(chain), tx.Hash)
+					msg := fmt.Sprintf("🚨 REAL EVIDENCE SECURED 🚨\n"+
+						"Direction: %s\n"+
+						"Amount:    %.5f Native Asset\n"+
+						"From:      %s\n"+
+						"To:        %s\n"+
+						"Network:   %s (Block %s)\n"+
+						"TxHash:    %s",
+						direction, amount, txFrom, txTo, strings.ToUpper(chain), blockNum.String(), tx.Hash)
 
 					log.Println(msg)
 					publishEvent("confirmed", tx.Hash, msg, targetAddr)
 
 					if target.OfficerEmail != "" {
-						go sendEmailAlert(target.OfficerEmail, targetAddr, direction, fmt.Sprintf("%.5f", amount), "Native Asset", strings.ToUpper(chain), tx.Hash)
+						go sendEmailAlert(target.OfficerEmail, targetAddr, direction, txFrom, txTo, fmt.Sprintf("%.5f", amount), "Native Asset", strings.ToUpper(chain), blockNum.String(), tx.Hash)
 					}
 				}
 			}
@@ -221,49 +227,80 @@ func fetchAndScanBlock(chain, httpURL, blockHex string) {
 	}
 }
 
-func sendEmailAlert(toEmail, wallet, direction, amount, token, chain, hash string) {
+func sendEmailAlert(toEmail, targetAddr, direction, fromAddr, toAddr, amount, token, chain, block, hash string) {
 	from := os.Getenv("SMTP_EMAIL")
 	password := os.Getenv("SMTP_PASSWORD")
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 
-	if from == "" || password == "" {
-		log.Println("[EMAIL ERROR] Missing SMTP credentials in .env")
+	if from == "" || password == "" || toEmail == "" {
 		return
 	}
 
+	log.Printf("[SENDING EMAIL] Alert to: %s for target: %s\n", toEmail, targetAddr)
+
 	timestamp := time.Now().Format("Jan 02, 2006 15:04:05 UTC")
-	fromHeader := fmt.Sprintf("From: \"D-CRYPT\" <%s>\r\n", from)
+	fromHeader := fmt.Sprintf("From: \"D-CRYPT SHIELD\" <%s>\r\n", from)
 	toHeader := fmt.Sprintf("To: %s\r\n", toEmail)
-	subject := "Subject: 🚨 D-CRYPT ALERT: Target Wallet Activity Intercepted\r\n"
+	subject := fmt.Sprintf("Subject: 🚨 D-CRYPT ALERT: Target %s Activity Intercepted (%s)\r\n", direction, chain)
 	mime := "MIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n"
 
+	dirColor := "#ef4444"
+	if direction == "INBOUND" {
+		dirColor = "#10b981"
+	}
+
+	blockInfo := ""
+	if block != "" && block != "0" {
+		blockInfo = fmt.Sprintf(" (Block #%s)", block)
+	}
+
+	explorerURL := fmt.Sprintf("https://etherscan.io/tx/%s", hash)
+	chainLower := strings.ToLower(chain)
+	if strings.Contains(chainLower, "sepolia") {
+		explorerURL = fmt.Sprintf("https://sepolia.etherscan.io/tx/%s", hash)
+	} else if strings.Contains(chainLower, "tron") {
+		explorerURL = fmt.Sprintf("https://tronscan.org/#/transaction/%s", hash)
+	} else if strings.Contains(chainLower, "bnb") || strings.Contains(chainLower, "binance") {
+		explorerURL = fmt.Sprintf("https://bscscan.com/tx/%s", hash)
+	}
+
 	body := fmt.Sprintf(`
-	<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-		<div style="background-color: #1e293b; padding: 20px; text-align: center;">
-			<h2 style="color: #fbbf24; margin: 0; letter-spacing: 2px;">D-CRYPT SHIELD</h2>
-			<p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 14px; text-transform: uppercase;">Tactical Telemetry Alert</p>
+	<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; max-width: 620px; margin: auto; border: 1px solid #0f172a; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.15);">
+		<div style="background-color: #0f172a; padding: 22px; text-align: center;">
+			<h2 style="color: #38bdf8; margin: 0; letter-spacing: 2px; font-size: 22px;">D-CRYPT SHIELD</h2>
+			<p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Live Tactical Telemetry Alert</p>
 		</div>
-		<div style="padding: 30px; background-color: #ffffff;">
-			<p style="font-size: 16px;"><strong>Hello Sir/Madam,</strong></p>
-			<p style="font-size: 14px; line-height: 1.6;">This is an official automated notification from the D-CRYPT Telemetry Engine. A new transaction matching your active tracker has been successfully intercepted on the global blockchain.</p>
-			<div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #fbbf24; margin: 20px 0; font-family: monospace; font-size: 13px;">
-				<p style="margin: 8px 0;"><strong>Timestamp:</strong> %s</p>
-				<p style="margin: 8px 0;"><strong>Target Wallet:</strong> %s</p>
-				<p style="margin: 8px 0;"><strong>Transfer Type:</strong> %s</p>
-				<p style="margin: 8px 0;"><strong>Amount:</strong> %s %s</p>
-				<p style="margin: 8px 0;"><strong>Network Layer:</strong> %s</p>
-				<p style="margin: 8px 0;"><strong>Transaction Hash:</strong> <span style="word-break: break-all; color: #2563eb;">%s</span></p>
+		<div style="padding: 28px; background-color: #ffffff;">
+			<p style="font-size: 15px; margin-top: 0; color: #0f172a;"><strong>Official Intelligence Dispatch:</strong></p>
+			<p style="font-size: 14px; line-height: 1.6; color: #334155;">An on-chain transaction matching your monitored suspect target has been <strong>successfully intercepted</strong> by the live forensic telemetry engine.</p>
+			
+			<div style="background-color: #f8fafc; border-left: 4px solid %s; border-radius: 6px; padding: 18px; margin: 20px 0; font-size: 13px; line-height: 1.8;">
+				<div style="margin-bottom: 8px;"><strong>Status:</strong> <span style="background-color: #d1fae5; color: #065f46; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 11px;">EVIDENCE INTERCEPTED</span></div>
+				<div style="margin-bottom: 8px;"><strong>Timestamp:</strong> %s</div>
+				<div style="margin-bottom: 8px;"><strong>Monitored Target:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold;">%s</code></div>
+				<div style="margin-bottom: 8px;"><strong>Flow Direction:</strong> <span style="color: %s; font-weight: bold;">%s</span></div>
+				<div style="margin-bottom: 8px;"><strong>Transfer Amount:</strong> <strong style="font-size: 15px; color: #0f172a;">%s %s</strong></div>
+				<div style="margin-bottom: 8px;"><strong>Network Layer:</strong> <strong>%s</strong>%s</div>
+				<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 12px 0;">
+				<div style="margin-bottom: 8px;"><strong>Sender (From):</strong><br><span style="word-break: break-all; font-family: monospace; color: #475569; font-size: 12px;">%s</span></div>
+				<div style="margin-bottom: 8px;"><strong>Receiver (To):</strong><br><span style="word-break: break-all; font-family: monospace; color: #475569; font-size: 12px;">%s</span></div>
+				<div style="margin-bottom: 8px;"><strong>Transaction Hash (TxID):</strong><br><a href="%s" target="_blank" style="word-break: break-all; font-family: monospace; color: #2563eb; font-weight: bold; font-size: 12px; text-decoration: underline;">%s</a></div>
 			</div>
-			<p style="font-size: 14px; line-height: 1.6;">Thank you for choosing D-CRYPT Shield for your intelligence operations.</p>
-			<p style="font-size: 14px; line-height: 1.6;">You can track and investigate this case further from your official dashboard link:<br>
-			<a href="https://shield.d-crypt.in" style="color: #2563eb; text-decoration: none; font-weight: bold; font-size: 16px;">shield.d-crypt.in</a></p>
+
+			<p style="font-size: 13px; line-height: 1.6; color: #64748b;">
+				This evidence payload has been cataloged into the active case repository. You can verify and trace the hop attribution directly in the console.
+			</p>
+			<p style="font-size: 14px; line-height: 1.6; margin-top: 22px; text-align: center;">
+				<a href="%s" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: bold; font-size: 14px; margin-right: 10px;">View on Blockchain Explorer</a>
+				<a href="https://shield.d-crypt.in" target="_blank" style="display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: bold; font-size: 14px;">Open Shield Console</a>
+			</p>
 		</div>
-		<div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0;">
-			This is a highly confidential system-generated message. Do not reply.
+		<div style="background-color: #f1f5f9; padding: 14px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0;">
+			D-CRYPT Automated Cyber Forensics System • Highly Confidential LEA Intelligence
 		</div>
 	</div>
-	`, timestamp, wallet, direction, amount, token, chain, hash)
+	`, dirColor, timestamp, targetAddr, dirColor, direction, amount, token, chain, blockInfo, fromAddr, toAddr, explorerURL, hash, explorerURL)
 
 	msg := []byte(fromHeader + toHeader + subject + mime + body)
 	auth := smtp.PlainAuth("", from, password, smtpHost)
