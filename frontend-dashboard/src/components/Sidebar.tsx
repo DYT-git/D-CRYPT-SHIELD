@@ -11,6 +11,7 @@ import {
   DatabaseIcon,
   FileTextIcon,
   SettingsIcon,
+  UserIcon,
 } from "./Icons";
 
 export default function Sidebar() {
@@ -34,6 +35,7 @@ export default function Sidebar() {
         ]
       : [
           { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
+          { href: "/civilian-reports", label: "Public Intake", icon: UserIcon },
           { href: "/trace", label: "Trace Wallet", icon: ActivityIcon },
           { href: "/live-tracking", label: "Live Tracking", icon: ZapIcon },
           { href: "/cases", label: "All Cases", icon: FolderIcon },
