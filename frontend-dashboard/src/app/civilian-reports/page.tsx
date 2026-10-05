@@ -82,7 +82,30 @@ const MOCK_REPORTS = [
 ];
 
 export default function CivilianReportsPage() {
-  const [selectedReport, setSelectedReport] = useState(MOCK_REPORTS[0]);
+  const [reports, setReports] = useState<any[]>(MOCK_REPORTS);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("sahyog_civilian_reports");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setReports([...parsed, ...MOCK_REPORTS]);
+      } else {
+        setReports(MOCK_REPORTS);
+      }
+    } catch {
+      setReports(MOCK_REPORTS);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (reports.length > 0 && !selectedReport) {
+      setSelectedReport(reports[0]);
+    }
+  }, [reports, selectedReport]);
+
+  if (!selectedReport) return null;
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] animate-fade-in">
@@ -98,7 +121,7 @@ export default function CivilianReportsPage() {
         
         {/* Left Column: Report List */}
         <div className="w-1/3 flex flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar">
-          {MOCK_REPORTS.map((report) => (
+          {reports.map((report) => (
             <button
               key={report.id}
               onClick={() => setSelectedReport(report)}
