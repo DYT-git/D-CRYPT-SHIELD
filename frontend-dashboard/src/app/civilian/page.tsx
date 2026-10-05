@@ -77,6 +77,17 @@ export default function CivilianPage() {
         status: "QUEUED"
       };
 
+      // Sync to shared server API endpoint so officers on any device see it immediately
+      try {
+        await fetch("/api/civilian-reports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newReport),
+        });
+      } catch (apiErr) {
+        console.warn("Server API sync fallback:", apiErr);
+      }
+
       const existingReports = JSON.parse(localStorage.getItem("sahyog_civilian_reports") || "[]");
       localStorage.setItem("sahyog_civilian_reports", JSON.stringify([newReport, ...existingReports]));
 

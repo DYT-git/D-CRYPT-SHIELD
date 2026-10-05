@@ -13,6 +13,7 @@ import {
   CopyIcon,
   CheckCircleIcon,
   SearchIcon,
+  UserIcon,
 } from "@/components/Icons";
 import DemoBadge from "@/components/DemoBadge";
 
@@ -204,6 +205,33 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [lastRefresh, setLastRefresh]   = useState<Date | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const [civilianCount, setCivilianCount] = useState<number>(3);
+  const [latestCivilian, setLatestCivilian] = useState<any>(null);
+
+  const loadCivilianReports = async () => {
+    try {
+      const res = await fetch("/api/civilian-reports");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.reports && Array.isArray(data.reports)) {
+          setCivilianCount(data.reports.length);
+          if (data.reports.length > 0) setLatestCivilian(data.reports[0]);
+          return;
+        }
+      }
+    } catch {}
+
+    try {
+      const stored = localStorage.getItem("sahyog_civilian_reports");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCivilianCount(3 + parsed.length);
+          setLatestCivilian(parsed[0]);
+        }
+      }
+    } catch {}
+  };
 
   const loadCases = async () => {
     try {
@@ -250,7 +278,10 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => { loadCases(); }, []);
+  useEffect(() => { 
+    loadCases(); 
+    loadCivilianReports();
+  }, []);
 
   const handleCopy = (addr: string) => {
     navigator.clipboard.writeText(addr);
@@ -387,8 +418,39 @@ export default function Dashboard() {
           );
         })}
       </div>
+ 
+       {/* ── Public Civilian Intake Alert Banner ── */}
+       <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/90 border border-blue-200 rounded-2xl p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+         <div className="flex items-center gap-3.5">
+           <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+             <UserIcon size={20} />
+           </div>
+           <div>
+             <div className="flex items-center gap-2">
+               <h3 className="text-[13px] font-black text-slate-900 tracking-tight">
+                 Public Intake Queue: {civilianCount} Citizen Fraud Reports Active
+               </h3>
+               <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200">
+                 ACTION REQUIRED
+               </span>
+             </div>
+             <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+               {latestCivilian 
+                 ? `Latest filing from ${latestCivilian.auth?.name || "Citizen"} (${latestCivilian.fraud?.amount || "Loss Reported"} on ${latestCivilian.fraud?.network || "Crypto"}) • Digital IP footprint captured`
+                 : "Civilian complaints submitted via the public fraud portal with verified device telemetry."}
+             </p>
+           </div>
+         </div>
 
-      {/* ── Cases Table ── */}
+         <Link
+           href="/civilian-reports"
+           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold transition-all shadow-xs shrink-0 self-start sm:self-auto cursor-pointer"
+         >
+           Review Complaints ({civilianCount}) →
+         </Link>
+       </div>
+
+       {/* ── Cases Table ── */}
       <div className="bg-white border border-[#ECF1F2] rounded-2xl flex flex-col overflow-hidden shadow-sm">
 
         {/* Toolbar */}

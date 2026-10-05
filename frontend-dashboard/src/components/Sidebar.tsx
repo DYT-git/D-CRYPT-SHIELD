@@ -18,10 +18,31 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
+  const [civilianCount, setCivilianCount] = useState<number>(3);
 
   useEffect(() => {
     setRole(localStorage.getItem("userRole"));
-  }, []);
+
+    const checkIntake = async () => {
+      try {
+        const res = await fetch("/api/civilian-reports");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.reports) setCivilianCount(data.reports.length);
+          return;
+        }
+      } catch {}
+      try {
+        const stored = localStorage.getItem("sahyog_civilian_reports");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setCivilianCount(3 + parsed.length);
+        }
+      } catch {}
+    };
+
+    checkIntake();
+  }, [pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
@@ -87,7 +108,12 @@ export default function Sidebar() {
                 className={isActive ? "text-[#3770FF]" : "text-[#757995]"}
                 strokeWidth={isActive ? 2 : 1.75}
               />
-              <span className="truncate">{link.label}</span>
+              <span className="truncate flex-1">{link.label}</span>
+              {link.href === "/civilian-reports" && civilianCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 font-mono">
+                  {civilianCount}
+                </span>
+              )}
             </Link>
           );
         })}

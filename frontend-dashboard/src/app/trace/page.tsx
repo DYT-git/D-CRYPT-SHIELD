@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   SearchIcon,
@@ -56,6 +56,24 @@ export default function TracePage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    try {
+      const override = localStorage.getItem("trace_preset_override");
+      if (override) {
+        const parsed = JSON.parse(override);
+        localStorage.removeItem("trace_preset_override");
+        setInputType("address");
+        setForm((prev) => ({
+          ...prev,
+          address: parsed.address || prev.address,
+          chain: parsed.chain || prev.chain,
+          case_id: parsed.case_id || prev.case_id,
+          submitted_by: parsed.submitted_by || prev.submitted_by,
+        }));
+      }
+    } catch {}
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
