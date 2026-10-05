@@ -24,7 +24,7 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
-    router.push("/login");
+    router.push("/");
   };
 
   const navLinks =

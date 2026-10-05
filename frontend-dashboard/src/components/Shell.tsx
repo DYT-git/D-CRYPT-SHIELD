@@ -15,7 +15,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsMounted(true);
     const role = localStorage.getItem("userRole");
-    if (!role && pathname !== "/" && pathname !== "/login") {
+    if (!role && pathname !== "/") {
       router.push("/");
     }
   }, [pathname, router]);
@@ -32,7 +32,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   if (!isMounted) return null; // Prevent hydration mismatch
 
-  if (pathname === "/login" || pathname === "/") {
+  if (pathname === "/") {
     return <main className="font-sans min-h-screen">{children}</main>;
   }
 

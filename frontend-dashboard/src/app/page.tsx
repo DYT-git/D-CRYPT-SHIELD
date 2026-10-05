@@ -497,12 +497,12 @@ export default function HomePage() {
 
           {/* Right Action Buttons */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <Link
-              href="/civilian"
-              className="hidden sm:inline-flex items-center text-xs font-semibold text-slate-600 hover:text-slate-900 px-3.5 py-1.5 rounded-full hover:bg-slate-100 transition-colors whitespace-nowrap"
+            <button
+              onClick={handleCivilianGoogleLogin}
+              className="hidden sm:inline-flex items-center text-xs font-semibold text-slate-600 hover:text-slate-900 px-3.5 py-1.5 rounded-full hover:bg-slate-100 transition-colors whitespace-nowrap cursor-pointer"
             >
               Civilian Portal
-            </Link>
+            </button>
 
             <button
               onClick={handleEvaluatorFastTrack}
@@ -544,13 +544,15 @@ export default function HomePage() {
               >
                 Officer Terminal
               </button>
-              <Link
-                href="/civilian"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-2.5 px-3 rounded-full bg-slate-100 text-slate-900 font-bold text-center whitespace-nowrap"
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleCivilianGoogleLogin();
+                }}
+                className="py-2.5 px-3 rounded-full bg-slate-100 text-slate-900 font-bold text-center whitespace-nowrap cursor-pointer"
               >
                 Civilian Portal
-              </Link>
+              </button>
             </div>
             <div className="flex flex-col gap-2 pt-1">
               <a href="#capabilities" onClick={() => setMobileMenuOpen(false)} className="py-2 px-3 hover:bg-slate-50 rounded-xl">Core Capabilities</a>
@@ -1266,12 +1268,12 @@ export default function HomePage() {
               >
                 Continue with Google Sign-In
               </button>
-              <Link
-                href="/civilian"
-                className="w-full h-11 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg flex items-center justify-center transition-colors"
+              <button
+                onClick={handleCivilianGoogleLogin}
+                className="w-full h-11 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg flex items-center justify-center transition-colors cursor-pointer"
               >
                 Open Civilian Reporting Form Direct &rarr;
-              </Link>
+              </button>
             </div>
           </div>
 
